@@ -21,6 +21,31 @@ const LinkedinIcon = ({ className }) => (
 export default function Contact() {
   const { socials } = portfolioData.personalInfo;
 
+  const handleGmailClick = (e) => {
+    e.preventDefault();
+    const email = socials.email;
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isIOS) {
+        const appUrl = `googlegmail:///co?to=${email}`;
+        const webUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}`;
+        
+        window.location.href = appUrl;
+        setTimeout(() => {
+          window.open(webUrl, "_blank");
+        }, 1500);
+      } else {
+        const encodedWebUrl = encodeURIComponent(`https://mail.google.com/mail/?view=cm&fs=1&to=${email}`);
+        const intentUrl = `intent://co?to=${email}#Intent;scheme=googlegmail;package=com.google.android.gm;S.browser_fallback_url=${encodedWebUrl};end`;
+        window.location.href = intentUrl;
+      }
+    } else {
+      window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${email}`, "_blank");
+    }
+  };
+
   return (
     <section
       id="contact"
@@ -83,6 +108,7 @@ export default function Contact() {
                   <p className="text-[10px] uppercase font-mono text-neutral-500 tracking-wider">Email</p>
                   <a
                     href={`https://mail.google.com/mail/?view=cm&fs=1&to=${socials.email}`}
+                    onClick={handleGmailClick}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm font-semibold text-white hover:text-amber-400 transition-colors"
@@ -141,6 +167,7 @@ export default function Contact() {
               </a>
               <a
                 href={`https://mail.google.com/mail/?view=cm&fs=1&to=${socials.email}`}
+                onClick={handleGmailClick}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-3 rounded-full bg-white/5 border border-white/10 text-neutral-400 hover:text-white hover:border-white/20 transition-all cursor-pointer"
