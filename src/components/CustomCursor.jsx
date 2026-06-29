@@ -5,11 +5,21 @@ export default function CustomCursor() {
   const [hidden, setHidden] = useState(true);
   const [clicked, setClicked] = useState(false);
   const [linkHovered, setLinkHovered] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   
   const outerRef = useRef(null);
   const trailingPos = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
+    const checkTouch = () => {
+      const hasTouch =
+        "ontouchstart" in window ||
+        navigator.maxTouchPoints > 0 ||
+        window.matchMedia("(pointer: coarse)").matches;
+      setIsTouchDevice(hasTouch);
+    };
+    checkTouch();
+
     const handleMouseMove = (e) => {
       setPosition({ x: e.clientX, y: e.clientY });
       setHidden(false);
@@ -75,7 +85,7 @@ export default function CustomCursor() {
     return () => cancelAnimationFrame(animId);
   }, [position]);
 
-  if (hidden) return null;
+  if (isTouchDevice || hidden) return null;
 
   return (
     <>
