@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', sans-serif;
+  --font-heading: 'Outfit', sans-serif;
+  --color-dark-bg: #050505;
+  --color-dark-card: rgba(13, 13, 13, 0.65);
+  --color-gold-light: #f3e5ab;
+  --color-gold-primary: #d4af37;
+  --color-gold-dark: #aa7c11;
+  --color-gold-muted: rgba(212, 175, 55, 0.15);
+}
+
+body {
+  background-color: #050505;
+  color: #e5e7eb;
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+  margin: 0;
+  cursor: none; /* Hide default cursor to enable custom cursor */
+}
+
+@media (max-width: 768px) {
+  body {
+    cursor: auto; /* Fallback for touch devices */
+  }
+}
+
+/* Custom premium scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #050505;
+}
+::-webkit-scrollbar-thumb {
+  background: #1a1a12;
+  border-radius: 4px;
+  border: 1px solid rgba(212, 175, 55, 0.1);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2a2415;
+  border-color: rgba(212, 175, 55, 0.2);
+}
+
+/* Glassmorphism card utility with gold highlights */
+.glass-card {
+  background: rgba(10, 10, 10, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(212, 175, 55, 0.05);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-card:hover {
+  border-color: rgba(212, 175, 55, 0.2);
+  box-shadow: 0 12px 40px 0 rgba(212, 175, 55, 0.05);
+}
+
+/* Custom Scrollbar for Lenis */
+html.lenis {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overflow: clip;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+/* Magnetic / hover states for styling */
+.magnetic-btn {
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Radial dark background grid with gold highlights */
+.grid-bg {
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.02) 0%, transparent 80%),
+    radial-gradient(circle at 0% 0%, rgba(212, 175, 55, 0.01) 0%, transparent 50%),
+    radial-gradient(circle at 100% 100%, rgba(212, 175, 55, 0.01) 0%, transparent 50%);
+}
+
+/* Typewriter animation support */
+@keyframes blink {
+  50% { border-color: transparent; }
+}
+
+.typewriter-cursor {
+  border-right: 2px solid #d4af37;
+  animation: blink 0.75s step-end infinite;
+}
