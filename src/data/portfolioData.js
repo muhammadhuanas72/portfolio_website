@@ -119,7 +119,7 @@ export const portfolioData = {
       id: "exp-1",
       role: "Web Development Intern",
       company: "Cognifyz Technologies",
-      period: "Internship Period", // Can customize later
+      period: "Nov 2024 – Dec 2024",
       description: "Focused on designing, developing, and deploying modern web user interfaces using frontend tech stacks.",
       highlights: [
         "Developed fully responsive websites and user interfaces to match design mockups.",
@@ -132,7 +132,7 @@ export const portfolioData = {
       id: "exp-2",
       role: "Java Development Intern",
       company: "Cognifyz Technologies",
-      period: "Internship Period", // Can customize later
+      period: "Jul 2025 – Aug 2025",
       description: "Focused on core programming, object-oriented application design, and database interaction.",
       highlights: [
         "Developed standalone Java applications leveraging robust OOP principles.",
