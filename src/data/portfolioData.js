@@ -11,7 +11,7 @@ export const portfolioData = {
     resumeUrl: "/Muhammadhu_Anas_Resume.pdf",
     socials: {
       email: "muhammadhuanas72@gmail.com",
-      phone: "+91 98765 43210", // Placeholder numbers/details which user can edit
+      phone: "+91 98949 37405", // Placeholder numbers/details which user can edit
       linkedin: "https://www.linkedin.com/in/muhammadhu-anas-972a80339",
       github: "https://github.com/muhammadhuanas72",
       location: "Tamil Nadu, India"
