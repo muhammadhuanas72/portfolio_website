@@ -3,11 +3,8 @@ import { Menu, X, ArrowUpRight } from "lucide-react";
 
 const navLinks = [
   { name: "About", id: "about" },
-  { name: "Skills", id: "skills" },
   { name: "Experience", id: "experience" },
   { name: "Projects", id: "projects" },
-  { name: "AI Workflow", id: "ai-workflow" },
-  { name: "Certifications", id: "certifications" },
   { name: "Contact", id: "contact" }
 ];
 
