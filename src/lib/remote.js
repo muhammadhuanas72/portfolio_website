@@ -5,7 +5,7 @@ export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 export const remoteEnabled = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
-export const BUCKETS = { resumes: "resumes", images: "project-images" };
+export const BUCKETS = { resumes: "resumes", images: "project-images", files: "project-files" };
 
 export const publicUrl = (bucket, path) =>
   path ? `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path.split("/").map(encodeURIComponent).join("/")}` : null;
@@ -31,8 +31,13 @@ export const toProject = (row) => ({
   tech: row.tech ?? [],
   demoUrl: row.demo_url || null,
   githubUrl: row.github_url || null,
-  image: publicUrl(BUCKETS.images, row.image_path),
+  // An edited built-in project can keep its original image from public/ ("/work/...").
+  image: row.image_path?.startsWith("/") ? row.image_path : publicUrl(BUCKETS.images, row.image_path),
   imagePath: row.image_path,
+  file: publicUrl(BUCKETS.files, row.file_path),
+  filePath: row.file_path,
+  fileName: row.file_name,
+  replaces: row.replaces,
 });
 
 export const toResume = (row) => ({
@@ -54,7 +59,11 @@ export function mergeContent(base, remote) {
     ...base.resumes.map((r) => remote.resumes.find((x) => x.slug === r.slug) ?? r),
     ...remote.resumes.filter((r) => !builtInSlugs.has(r.slug)),
   ].filter((r) => !hidden.has(`resume:${r.slug}`));
-  const projects = [...base.projects, ...remote.projects].filter((p) => !hidden.has(`project:${p.id}`));
+  // An edited copy takes the built-in project's place; removals are keyed by the built-in id.
+  const projects = [
+    ...base.projects.map((p) => remote.projects.find((r) => r.replaces === p.id) ?? p),
+    ...remote.projects.filter((r) => !r.replaces),
+  ].filter((p) => !hidden.has(`project:${p.replaces ?? p.id}`));
   return { projects, resumes };
 }
 

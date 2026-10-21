@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { portfolioData } from "../data/portfolioData";
 import { BUCKETS, remoteEnabled, toProject, toResume } from "../lib/remote";
 import { LIMITS, OWNER_EMAIL, supabase } from "./supabase";
@@ -378,14 +378,49 @@ const empty = {
 };
 
 const isUrl = (v) => !v || /^https?:\/\/\S+$/i.test(v);
+const lines = (v) => v.split("\n").map((x) => x.trim()).filter(Boolean);
+
+// Project files visitors can download. Power BI files have no registered type, so they go up as binary.
+const FILE_TYPES = {
+  pbix: "application/octet-stream",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  xls: "application/vnd.ms-excel",
+  csv: "text/csv",
+  pdf: "application/pdf",
+  zip: "application/zip",
+};
+const FILE_BYTES = 50 * 1024 * 1024;
+const extOf = (name) => (name.includes(".") ? name.split(".").pop().toLowerCase() : "");
+
+// A project (built-in or from the database) -> the form's string fields.
+const toForm = (p) => ({
+  title: p.title ?? "",
+  subtitle: p.subtitle ?? "",
+  category: p.category === "data" ? "data" : "web",
+  year: p.year ?? "",
+  details: p.details ?? "",
+  features: (p.features ?? []).join("\n"),
+  tech: (p.tech ?? []).join(", "),
+  demo_url: p.demoUrl ?? "",
+  github_url: p.githubUrl ?? "",
+});
+
+// Storage paths only; built-in images ("/work/...") live in the code and are never deleted.
+const stored = (path) => (path && !path.startsWith("/") ? path : null);
 
 function Projects() {
   const [rows, setRows] = useState([]);
   const [hidden, setHidden] = useState(new Set());
   const [form, setForm] = useState(empty);
   const [image, setImage] = useState(null);
+  const [file, setFile] = useState(null);
+  const [dropFile, setDropFile] = useState(false);
+  // { base, current }: base is the built-in project (or null), current is what the site shows.
+  const [editing, setEditing] = useState(null);
+  const [formKey, setFormKey] = useState(0);
   const [state, setState] = useState(null);
   const [busy, setBusy] = useState(false);
+  const formRef = useRef(null);
 
   const load = useCallback(async () => {
     try {
@@ -407,116 +442,192 @@ function Projects() {
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!form.title.trim()) return setState({ error: true, message: "Give the project a title." });
-    if (!isUrl(form.demo_url) || !isUrl(form.github_url)) {
-      return setState({ error: true, message: "Links must start with http:// or https://" });
-    }
-    if (image && !LIMITS.imageTypes[image.type]) return setState({ error: true, message: "Images must be PNG, JPG or WebP." });
-    if (image && image.size > LIMITS.imageBytes) return setState({ error: true, message: "Keep images under 4 MB." });
+  const items = [
+    ...portfolioData.projects.map((b) => {
+      const edit = rows.find((r) => r.replaces === b.id);
+      return { base: b, current: edit ?? b, edited: Boolean(edit) };
+    }),
+    ...rows.filter((r) => !r.replaces).map((r) => ({ base: null, current: r, edited: false })),
+  ];
 
-    setBusy(true);
-    setState({ message: "Saving project…" });
-    let image_path = null;
-    if (image) {
-      image_path = `${crypto.randomUUID()}.${LIMITS.imageTypes[image.type]}`;
-      const up = await supabase.storage.from(BUCKETS.images).upload(image_path, image, { contentType: image.type });
-      if (up.error) {
-        setBusy(false);
-        return setState({ error: true, message: up.error.message });
-      }
-    }
-
-    const lines = (v) => v.split("\n").map((x) => x.trim()).filter(Boolean);
-    const { error } = await supabase.from("projects").insert({
-      title: form.title.trim(),
-      subtitle: form.subtitle.trim() || null,
-      category: form.category,
-      year: form.year.trim() || null,
-      details: form.details.trim() || null,
-      features: lines(form.features),
-      tech: form.tech.split(",").map((x) => x.trim()).filter(Boolean),
-      demo_url: form.demo_url.trim() || null,
-      github_url: form.github_url.trim() || null,
-      image_path,
-    });
-    setBusy(false);
-    if (error) {
-      if (image_path) await supabase.storage.from(BUCKETS.images).remove([image_path]);
-      return setState({ error: true, message: error.message });
-    }
+  const resetForm = () => {
     setForm(empty);
     setImage(null);
-    e.target.reset();
-    setState({ message: "Project added. It now appears on the site." });
-    load();
+    setFile(null);
+    setDropFile(false);
+    setEditing(null);
+    setFormKey((k) => k + 1); // clears the file inputs
   };
 
-  // Added here: delete the row and its image. Built-in: hide it (it stays in projects.json).
-  const remove = async (p) => {
-    if (p.remote) {
-      if (!window.confirm(`Delete “${p.title}” from the portfolio?`)) return;
-      const { error } = await supabase.from("projects").delete().eq("id", p.id);
-      if (error) return setState({ error: true, message: error.message });
-      if (p.imagePath) await supabase.storage.from(BUCKETS.images).remove([p.imagePath]);
-      setState({ message: `Deleted “${p.title}”.` });
-    } else {
-      if (!window.confirm(`Remove “${p.title}” from the site? You can restore it later.`)) return;
-      const { error } = await hide("project", p.id);
-      if (error) return setState({ error: true, message: error.message });
-      setState({ message: `Removed “${p.title}” from the site.` });
+  const startEdit = (item) => {
+    resetForm();
+    setEditing(item);
+    setForm(toForm(item.current));
+    setState({ message: `Editing “${item.current.title}”. Change anything, add a screenshot or file, then save.` });
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const upload = async (bucket, f, contentType) => {
+    const path = `${crypto.randomUUID()}.${extOf(f.name) || "bin"}`;
+    const up = await supabase.storage.from(bucket).upload(path, f, { contentType });
+    if (up.error) throw up.error;
+    return path;
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    const fail = (message) => setState({ error: true, message });
+    if (!form.title.trim()) return fail("Give the project a title.");
+    if (!isUrl(form.demo_url) || !isUrl(form.github_url)) return fail("Links must start with http:// or https://");
+    if (image && !LIMITS.imageTypes[image.type]) return fail("Images must be PNG, JPG or WebP.");
+    if (image && image.size > LIMITS.imageBytes) return fail("Keep images under 4 MB.");
+    if (file && !FILE_TYPES[extOf(file.name)]) return fail("Project files can be .pbix, .xlsx, .xls, .csv, .pdf or .zip.");
+    if (file && file.size > FILE_BYTES) return fail("Keep project files under 50 MB.");
+
+    setBusy(true);
+    setState({ message: file ? `Uploading ${file.name}…` : "Saving project…" });
+    const fresh = [];
+    try {
+      const imagePath = image ? await upload(BUCKETS.images, image, image.type) : null;
+      if (imagePath) fresh.push([BUCKETS.images, imagePath]);
+      const filePath = file ? await upload(BUCKETS.files, file, FILE_TYPES[extOf(file.name)]) : null;
+      if (filePath) fresh.push([BUCKETS.files, filePath]);
+
+      const cur = editing?.current;
+      const keepFile = !dropFile && !filePath;
+      const fields = {
+        title: form.title.trim(),
+        subtitle: form.subtitle.trim() || null,
+        category: form.category,
+        year: form.year.trim() || null,
+        details: form.details.trim() || null,
+        features: lines(form.features),
+        tech: form.tech.split(",").map((x) => x.trim()).filter(Boolean),
+        demo_url: form.demo_url.trim() || null,
+        github_url: form.github_url.trim() || null,
+        image_path: imagePath ?? (cur ? (cur.remote ? cur.imagePath : cur.image) ?? null : null),
+        file_path: filePath ?? (keepFile ? cur?.filePath ?? null : null),
+        file_name: file ? file.name : keepFile ? cur?.fileName ?? null : null,
+      };
+
+      let error;
+      if (cur?.remote) ({ error } = await supabase.from("projects").update(fields).eq("id", cur.id));
+      else ({ error } = await supabase.from("projects").insert({ ...fields, replaces: editing?.base?.id ?? null }));
+      if (error) throw error;
+
+      // Files the saved row no longer points at.
+      if (cur?.remote) {
+        const old = [];
+        if (imagePath && stored(cur.imagePath)) old.push([BUCKETS.images, cur.imagePath]);
+        if ((filePath || dropFile) && cur.filePath) old.push([BUCKETS.files, cur.filePath]);
+        for (const [bucket, path] of old) await supabase.storage.from(bucket).remove([path]);
+      }
+
+      setState({ message: `“${fields.title}” ${editing ? "updated" : "added"}. It now shows on the site.` });
+      resetForm();
+      load();
+    } catch (err) {
+      for (const [bucket, path] of fresh) await supabase.storage.from(bucket).remove([path]);
+      setState({ error: true, message: err.message });
     }
-    load();
+    setBusy(false);
   };
 
-  const restore = async (p) => {
-    const { error } = await unhide("project", p.id);
-    if (error) return setState({ error: true, message: error.message });
-    setState({ message: `“${p.title}” is back on the site.` });
-    load();
+  // Delete a database row and the files only it uses.
+  const dropRow = async (p) => {
+    const { error } = await supabase.from("projects").delete().eq("id", p.id);
+    if (error) throw error;
+    if (stored(p.imagePath)) await supabase.storage.from(BUCKETS.images).remove([p.imagePath]);
+    if (p.filePath) await supabase.storage.from(BUCKETS.files).remove([p.filePath]);
   };
 
-  const all = [...portfolioData.projects, ...rows];
+  const act = async (confirmText, fn, done) => {
+    if (confirmText && !window.confirm(confirmText)) return;
+    try {
+      await fn();
+      setState({ message: done });
+      if (editing) resetForm();
+      load();
+    } catch (err) {
+      setState({ error: true, message: err.message });
+    }
+  };
 
   return (
     <Section title="Projects" index="02">
       <p className="mt-3 text-[13px] text-ink-2">
-        Every project on the site. Built-in ones (from <code>src/data/projects.json</code>) can be removed and restored; ones added below
-        can be deleted.
+        Every project on the site. <strong>Edit</strong> changes any of them, including adding a screenshot or a Power BI / Excel file
+        visitors can download. Built-in projects can be removed and restored; ones you added can be deleted.
       </p>
 
       <ul className="mt-4 border-t border-line">
-        {all.map((p) => {
-          const off = !p.remote && hidden.has(String(p.id));
+        {items.map((item) => {
+          const { base, current: p } = item;
+          const off = base && hidden.has(String(base.id));
           return (
-            <li key={p.id} className={`flex items-center justify-between gap-4 border-b border-line py-3 ${off ? "opacity-60" : ""}`}>
+            <li key={base?.id ?? p.id} className={`flex flex-wrap items-center justify-between gap-3 border-b border-line py-3 ${off ? "opacity-60" : ""}`}>
               <div className="min-w-0">
-                <p className="truncate font-semibold">
+                <p className="font-semibold">
                   {p.title}
                   {off && <span className="label ml-2 text-signal">Removed from site</span>}
                 </p>
                 <p className="label text-mute">
                   {p.category === "data" ? "Data & analytics" : "Web build"}
-                  {p.year ? ` · ${p.year}` : ""} · {p.remote ? "Added here" : "Built-in"}
+                  {p.year ? ` · ${p.year}` : ""} · {base ? (item.edited ? "Built-in, edited" : "Built-in") : "Added here"}
+                  {p.image ? " · Image" : ""}
+                  {p.fileName ? ` · File: ${p.fileName}` : ""}
                 </p>
               </div>
-              {off ? (
-                <button type="button" className="btn btn-signal shrink-0" onClick={() => restore(p)}>
-                  <span>Restore</span>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" className="btn" disabled={busy} onClick={() => startEdit(item)}>
+                  <span>Edit</span>
                 </button>
-              ) : (
-                <button type="button" className="btn shrink-0" onClick={() => remove(p)}>
-                  <span>{p.remote ? "Delete" : "Remove"}</span>
-                </button>
-              )}
+                {item.edited && (
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={busy}
+                    onClick={() => act(`Undo your edits to “${base.title}”? Its uploaded image and file are deleted.`, () => dropRow(p), `“${base.title}” is back to the original.`)}
+                  >
+                    <span>Use original</span>
+                  </button>
+                )}
+                {base && off && (
+                  <button type="button" className="btn btn-signal" disabled={busy} onClick={() => act(null, async () => {
+                    const { error } = await unhide("project", base.id);
+                    if (error) throw error;
+                  }, `“${p.title}” is back on the site.`)}>
+                    <span>Restore</span>
+                  </button>
+                )}
+                {base && !off && (
+                  <button type="button" className="btn" disabled={busy} onClick={() => act(`Remove “${p.title}” from the site? You can restore it later.`, async () => {
+                    const { error } = await hide("project", base.id);
+                    if (error) throw error;
+                  }, `Removed “${p.title}” from the site.`)}>
+                    <span>Remove</span>
+                  </button>
+                )}
+                {!base && (
+                  <button type="button" className="btn" disabled={busy} onClick={() => act(`Delete “${p.title}” from the portfolio? Its image and file are deleted too.`, () => dropRow(p), `Deleted “${p.title}”.`)}>
+                    <span>Delete</span>
+                  </button>
+                )}
+              </div>
             </li>
           );
         })}
       </ul>
 
-      <p className="label mt-8 text-mute">Add a project</p>
-      <form onSubmit={submit} className="mt-3 grid gap-4 md:grid-cols-2">
+      <div ref={formRef} className="mt-8 flex scroll-mt-6 items-baseline justify-between gap-4">
+        <p className="label text-mute">{editing ? `Editing: ${editing.current.title}` : "Add a project"}</p>
+        {editing && (
+          <button type="button" className="label underline underline-offset-4" onClick={() => { resetForm(); setState(null); }}>
+            Cancel editing
+          </button>
+        )}
+      </div>
+      <form key={formKey} onSubmit={submit} className="mt-3 grid gap-4 md:grid-cols-2">
         <label className="block md:col-span-2">
           <span className="label text-mute">Title *</span>
           <input required value={form.title} onChange={set("title")} className={`${field} mt-1`} />
@@ -558,8 +669,9 @@ function Projects() {
           <span className="label text-mute">GitHub URL</span>
           <input type="url" value={form.github_url} onChange={set("github_url")} placeholder="https://github.com/…" className={`${field} mt-1`} />
         </label>
-        <label className="block md:col-span-2">
+        <label className="block">
           <span className="label text-mute">Screenshot (PNG, JPG or WebP, under 4 MB)</span>
+          {editing?.current.image && !image && <span className="mt-1 block text-[12px] text-ink-2">Keeps the current image unless you choose a new one.</span>}
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp"
@@ -567,9 +679,29 @@ function Projects() {
             className="mt-1 block w-full text-[13px]"
           />
         </label>
+        <div className="block">
+          <label className="block">
+            <span className="label text-mute">Project file (.pbix, .xlsx, .xls, .csv, .pdf, .zip, under 50 MB)</span>
+            <input
+              type="file"
+              accept=".pbix,.xlsx,.xls,.csv,.pdf,.zip"
+              onChange={(e) => {
+                setFile(e.target.files?.[0] ?? null);
+                setDropFile(false);
+              }}
+              className="mt-1 block w-full text-[13px]"
+            />
+          </label>
+          {editing?.current.fileName && !file && (
+            <label className="mt-2 flex items-center gap-2 text-[12px] text-ink-2">
+              <input type="checkbox" checked={dropFile} onChange={(e) => setDropFile(e.target.checked)} />
+              Remove the current file ({editing.current.fileName})
+            </label>
+          )}
+        </div>
         <div className="md:col-span-2">
           <button type="submit" className="btn btn-signal" disabled={busy}>
-            <span>{busy ? "Saving…" : "Add project"}</span>
+            <span>{busy ? "Saving…" : editing ? "Save changes" : "Add project"}</span>
             <span aria-hidden="true">→</span>
           </button>
           <Notice state={state} />

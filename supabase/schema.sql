@@ -28,6 +28,12 @@ create table if not exists public.projects (
   image_path  text
 );
 
+-- Edited copies of built-in projects point at the original's id; uploads add a downloadable file.
+alter table public.projects add column if not exists replaces  text;
+alter table public.projects add column if not exists file_path text;
+alter table public.projects add column if not exists file_name text;
+create unique index if not exists projects_replaces_key on public.projects (replaces) where replaces is not null;
+
 -- A row whose slug matches a built-in resume replaces that file; any other slug is an extra resume.
 create table if not exists public.resumes (
   slug        text primary key,
@@ -86,7 +92,10 @@ create policy "owner manages resumes" on public.resumes
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values
   ('resumes',        'resumes',        true, 5242880, array['application/pdf']),
-  ('project-images', 'project-images', true, 4194304, array['image/png', 'image/jpeg', 'image/webp'])
+  ('project-images', 'project-images', true, 4194304, array['image/png', 'image/jpeg', 'image/webp']),
+  ('project-files',  'project-files',  true, 52428800, array[
+    'application/octet-stream', 'application/pdf', 'text/csv', 'application/zip', 'application/x-zip-compressed',
+    'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])
 on conflict (id) do update
   set public = excluded.public,
       file_size_limit = excluded.file_size_limit,
@@ -100,15 +109,15 @@ drop policy if exists "owner lists portfolio files"   on storage.objects;
 -- Storage looks a file up before removing or replacing it, so deletes need a select policy too.
 create policy "owner lists portfolio files" on storage.objects
   for select to authenticated
-  using (bucket_id in ('resumes', 'project-images') and public.is_portfolio_owner());
+  using (bucket_id in ('resumes', 'project-images', 'project-files') and public.is_portfolio_owner());
 
 create policy "owner uploads portfolio files" on storage.objects
   for insert to authenticated
-  with check (bucket_id in ('resumes', 'project-images') and public.is_portfolio_owner());
+  with check (bucket_id in ('resumes', 'project-images', 'project-files') and public.is_portfolio_owner());
 create policy "owner updates portfolio files" on storage.objects
   for update to authenticated
-  using (bucket_id in ('resumes', 'project-images') and public.is_portfolio_owner());
+  using (bucket_id in ('resumes', 'project-images', 'project-files') and public.is_portfolio_owner());
 create policy "owner deletes portfolio files" on storage.objects
   for delete to authenticated
-  using (bucket_id in ('resumes', 'project-images') and public.is_portfolio_owner());
+  using (bucket_id in ('resumes', 'project-images', 'project-files') and public.is_portfolio_owner());
 -- Public buckets serve files by URL, so no public select policy on storage.objects is needed.

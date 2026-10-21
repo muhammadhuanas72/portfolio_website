@@ -168,8 +168,9 @@ function Details({ p, i }) {
 
       <div className="flex flex-col border-t border-line px-4 py-6 md:col-span-3 md:border-t-0 md:px-6">
         <Tags items={p.tech} />
-        {(p.demoUrl || p.githubUrl) && (
+        {(p.demoUrl || p.githubUrl || p.file) && (
           <div className="mt-6 flex flex-wrap gap-2 md:mt-auto md:pt-6">
+            {p.file && <FileBtn p={p} />}
             {p.demoUrl && (
               <Btn href={p.demoUrl} external signal>
                 Live demo
@@ -224,8 +225,9 @@ function DataProject({ p, i }) {
         )}
         <div className="mt-auto pt-2">
           <Tags items={p.tech} />
-          {(p.demoUrl || p.githubUrl) && (
+          {(p.demoUrl || p.githubUrl || p.file) && (
             <div className="mt-4 flex flex-wrap gap-2">
+              {p.file && <FileBtn p={p} signal={!p.demoUrl} />}
               {p.demoUrl && (
                 <Btn href={p.demoUrl} external signal>
                   View
@@ -241,6 +243,18 @@ function DataProject({ p, i }) {
         </div>
       </div>
     </article>
+  );
+}
+
+// Download link for an uploaded project file (Power BI, Excel, CSV, PDF, ZIP). The file lives on
+// Supabase's domain, where the download attribute is ignored, so ask storage to send it as a download.
+function FileBtn({ p, signal = false }) {
+  const name = p.fileName || p.filePath.split("/").pop();
+  const ext = name.includes(".") ? name.split(".").pop().toLowerCase() : "";
+  return (
+    <Btn href={`${p.file}?download=${encodeURIComponent(name)}`} signal={signal}>
+      Download {ext ? `.${ext}` : "file"}
+    </Btn>
   );
 }
 
