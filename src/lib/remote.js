@@ -54,6 +54,20 @@ export const toCertification = (row) => ({
   fileName: row.file_name,
 });
 
+export const toExperience = (row) => ({
+  id: row.id,
+  remote: true,
+  replaces: row.replaces,
+  kind: row.kind,
+  title: row.title,
+  org: row.org ?? "",
+  location: row.location ?? "",
+  period: row.period ?? "",
+  summary: row.summary ?? "",
+  points: row.points ?? [],
+  position: row.position ?? 0,
+});
+
 export const toResume = (row) => ({
   slug: row.slug,
   label: row.label,
@@ -82,22 +96,30 @@ export function mergeContent(base, remote) {
     ...base.certifications.map((c) => remote.certifications.find((r) => r.replaces === c.id) ?? c),
     ...remote.certifications.filter((r) => !r.replaces),
   ].filter((c) => !hidden.has(`certification:${c.replaces ?? c.id}`));
-  return { projects, resumes, certifications };
+  const experience = [
+    ...base.experience.map((e) => remote.experience.find((r) => r.replaces === e.id) ?? e),
+    ...remote.experience.filter((r) => !r.replaces),
+  ]
+    .filter((e) => !hidden.has(`experience:${e.replaces ?? e.id}`))
+    .sort((a, b) => a.position - b.position);
+  return { projects, resumes, certifications, experience };
 }
 
 export async function fetchRemote() {
   if (!remoteEnabled) return null;
   try {
-    const [projects, resumes, certifications, hidden] = await Promise.all([
+    const [projects, resumes, certifications, experience, hidden] = await Promise.all([
       get("projects", "select=*&order=sort.asc,created_at.asc"),
       get("resumes", "select=*&order=created_at.asc"),
       get("certifications", "select=*&order=created_at.asc"),
+      get("experience", "select=*&order=created_at.asc"),
       get("hidden", "select=kind,item_id"),
     ]);
     return {
       projects: projects.map(toProject),
       resumes: resumes.map(toResume),
       certifications: certifications.map(toCertification),
+      experience: experience.map(toExperience),
       hidden,
     };
   } catch (err) {

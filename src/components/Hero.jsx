@@ -3,11 +3,11 @@ import { portfolioData } from "../data/portfolioData";
 import { gsap, useGsap, scrollToId, prefersReducedMotion, MOTION_OK, DESKTOP } from "../lib/motion";
 import { Corners, ResumeMenu, Ruler, Words } from "./ui";
 import { BOOT_DELAY } from "../lib/boot";
+import { useContent } from "../lib/contentContext";
+import { isEducation } from "../lib/experience";
 
 const { name, titles, socials, avatar } = portfolioData.personalInfo;
 const education = portfolioData.about.timeline[0];
-const internships = portfolioData.experience;
-const latest = internships[0]; // listed newest first
 const skill = (id) => portfolioData.skills.categories.find((c) => c.id === id).items;
 
 // The drawing builds itself on load: construction lines, the plants and doorway, then the
@@ -107,19 +107,26 @@ function HeroDrawing({ onDone }) {
   );
 }
 
-const facts = [
+// Work entries (newest first) summarised as "2 internships · Company" or "3 roles · Company".
+const workSummary = (experience) => {
+  const work = experience.filter((e) => !isEducation(e));
+  const noun = work.every((e) => /intern/i.test(e.kind)) ? "internship" : "role";
+  return { count: `${work.length} ${noun}${work.length === 1 ? "" : "s"}`, latest: work[0]?.org ?? "" };
+};
+
+const factsFor = (work) => [
   { k: "Based in", v: socials.location },
   { k: "Studying", v: `${education.title} · CGPA ${education.cgpa} · ${education.year}` },
-  { k: "Experience", v: `${internships.length} internships · ${latest.company}` },
+  { k: "Experience", v: [work.count, work.latest].filter(Boolean).join(" · ") },
   { k: "Works with", v: ["HTML5", "JavaScript", "React.js", ...skill("data").filter((x) => ["SQL (MySQL)", "Power BI"].includes(x)), "Python"].join(" · ") },
 ];
 
 // Callouts pinned to the photo (positions are % of the photo box). `open` places the
 // callout so it never covers the face.
-const markers = [
+const markersFor = (work) => [
   { x: 50, y: 18, open: "left-3 top-3", code: "01", title: titles[0], note: titles.slice(1).join(" · ") },
   { x: 50.5, y: 33, open: "right-3 top-3", code: "02", title: education.title, note: `${education.year} · Crescent Institute` },
-  { x: 55, y: 50, open: "left-3 top-3", code: "03", title: `${internships.length}× internships`, note: internships[0].company },
+  { x: 55, y: 50, open: "left-3 top-3", code: "03", title: work.count, note: work.latest },
 ];
 
 export default function Hero() {
@@ -133,6 +140,9 @@ export default function Hero() {
   const rulerX = useRef(null);
   const rulerY = useRef(null);
   const [active, setActive] = useState(null);
+  const work = workSummary(useContent().experience);
+  const facts = factsFor(work);
+  const markers = markersFor(work);
   // Pop the markers in once the drawing has finished building.
   const drawn = () => gsap.to(root.current.querySelectorAll("[data-marker]"), { scale: 1, duration: 0.6, stagger: 0.12, ease: "back.out(2)" });
 

@@ -1,39 +1,28 @@
 import { useRef } from "react";
 import { portfolioData } from "../data/portfolioData";
+import { useContent } from "../lib/contentContext";
+import { isEducation } from "../lib/experience";
 import { gsap, useGsap, DESKTOP } from "../lib/motion";
 import IsoGlyph from "./IsoGlyph";
 import { Eyebrow, Plus } from "./ui";
 
-const { experience, about } = portfolioData;
+const { about } = portfolioData;
 
-const entries = [
-  // Newest internship first, then education.
-  ...experience.map((e) => ({
-    id: e.id,
-    kind: "Internship",
-    title: e.role,
-    org: [e.company, e.location].filter(Boolean).join(" · "),
-    period: e.period,
-    summary: e.description,
-    points: e.highlights,
-    glyph: /java/i.test(e.role) ? "shaft" : "layers",
-  })),
-  ...about.timeline.map((t, i) => ({
-    id: t.id,
-    kind: "Education",
-    title: t.title,
-    org: t.institution,
-    period: t.year,
-    summary: t.description,
-    points: [],
-    glyph: i === 0 ? "orb" : "kit",
-  })),
-];
+// Drawing per card: education alternates orb / kit; work uses the shaft for Java roles.
+const glyphFor = (e, eduIndex) =>
+  isEducation(e) ? (eduIndex % 2 === 0 ? "orb" : "kit") : /java|backend/i.test(e.title) ? "shaft" : "layers";
 
 export default function Experience() {
   const root = useRef(null);
   const pin = useRef(null);
   const track = useRef(null);
+  const { experience } = useContent();
+  let edu = 0;
+  const entries = experience.map((e) => ({
+    ...e,
+    org: [e.org, e.location].filter(Boolean).join(" · "),
+    glyph: glyphFor(e, isEducation(e) ? edu++ : 0),
+  }));
 
   useGsap(root, (add) => {
     add(DESKTOP, () => {
@@ -112,7 +101,7 @@ export default function Experience() {
 
               {/* Detail */}
               <div className="grid gap-5 px-4 pb-8 pt-6 md:grid-cols-2 md:px-6">
-                <p className="text-[14px] leading-snug text-ink-2">{e.summary}</p>
+                {e.summary && <p className="text-[14px] leading-snug text-ink-2">{e.summary}</p>}
                 {e.points.length > 0 && (
                   <ul className="space-y-2">
                     {e.points.map((pt, k) => (

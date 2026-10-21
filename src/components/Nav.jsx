@@ -73,24 +73,34 @@ export default function Nav() {
         </div>
       </header>
 
+      {/* Compact dropdown under the Menu button; tapping outside closes it */}
       {open && (
-        <nav
-          id="mobile-menu"
-          aria-label="Mobile"
-          className="fixed inset-x-[var(--frame)] bottom-0 top-[var(--nav-h)] z-40 flex flex-col border-x border-line bg-paper md:hidden"
-        >
-          {[...links, { name: "Contact me", id: "contact" }].map((l, i) => (
-            <a
-              key={l.id}
-              href={`#${l.id}`}
-              onClick={(e) => go(e, l.id)}
-              className="display flex items-baseline justify-between border-b border-line px-4 py-5 text-[34px]"
-            >
-              <span className={l.id === "contact" ? "text-signal" : ""}>{l.name}</span>
-              <span className="label text-mute">[0{i + 1}]</span>
-            </a>
-          ))}
-        </nav>
+        <>
+          <button
+            type="button"
+            aria-label="Close menu"
+            tabIndex={-1}
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 top-[var(--nav-h)] z-40 cursor-default bg-ink/10 md:hidden"
+          />
+          <nav
+            id="mobile-menu"
+            aria-label="Mobile"
+            className="fixed right-[var(--frame)] top-[var(--nav-h)] z-50 w-[min(220px,calc(100vw-32px))] border border-t-0 border-line bg-paper shadow-[0_8px_24px_-12px_rgba(40,40,40,0.35)] md:hidden"
+          >
+            {[...links, { name: "Contact me", id: "contact" }].map((l, i) => (
+              <a
+                key={l.id}
+                href={`#${l.id}`}
+                onClick={(e) => go(e, l.id)}
+                className="flex items-baseline justify-end gap-3 border-b border-line px-4 py-3 text-right last:border-b-0"
+              >
+                <span className="label text-mute">[0{i + 1}]</span>
+                <span className={`display text-[17px] ${l.id === "contact" ? "text-signal" : ""}`}>{l.name}</span>
+              </a>
+            ))}
+          </nav>
+        </>
       )}
     </>
   );

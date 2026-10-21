@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { portfolioData } from "../data/portfolioData";
-import { BUCKETS, remoteEnabled, toCertification, toProject, toResume } from "../lib/remote";
+import { BUCKETS, remoteEnabled, toCertification, toExperience, toProject, toResume } from "../lib/remote";
+import { builtInExperience } from "../lib/experience";
 import { LIMITS, OWNER_EMAIL, supabase } from "./supabase";
 
 const field = "w-full border border-line bg-paper px-3 py-2 text-[14px] outline-none focus:border-ink";
@@ -51,6 +52,7 @@ export default function Admin() {
         <>
           <Resumes />
           <Projects />
+          <Experience />
           <Certifications />
         </>
       )}
@@ -715,6 +717,287 @@ function Projects() {
   );
 }
 
+/* ---------------- Experience & education ---------------- */
+
+const KINDS = ["Internship", "Full-time", "Part-time", "Freelance", "Education"];
+const emptyExp = { kind: "Internship", title: "", org: "", location: "", period: "", summary: "", points: "", position: "5" };
+
+const expToForm = (e) => ({
+  kind: e.kind ?? "Internship",
+  title: e.title ?? "",
+  org: e.org ?? "",
+  location: e.location ?? "",
+  period: e.period ?? "",
+  summary: e.summary ?? "",
+  points: (e.points ?? []).join("\n"),
+  position: String(e.position ?? 0),
+});
+
+function Experience() {
+  const [rows, setRows] = useState([]);
+  const [hidden, setHidden] = useState(new Set());
+  const [form, setForm] = useState(emptyExp);
+  const [editing, setEditing] = useState(null); // { base, current }
+  const [state, setState] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const formRef = useRef(null);
+
+  const load = useCallback(async () => {
+    try {
+      const [{ data, error }, h] = await Promise.all([
+        supabase.from("experience").select("*").order("created_at", { ascending: true }),
+        loadHidden("experience"),
+      ]);
+      if (error) throw error;
+      setRows(data.map(toExperience));
+      setHidden(h);
+    } catch (err) {
+      setState({ error: true, message: err.message });
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  // Same order as the site: by position, built-in entries replaced by their edited copies.
+  const items = [
+    ...builtInExperience.map((b) => {
+      const edit = rows.find((r) => r.replaces === b.id);
+      return { base: b, current: edit ?? b, edited: Boolean(edit) };
+    }),
+    ...rows.filter((r) => !r.replaces).map((r) => ({ base: null, current: r, edited: false })),
+  ].sort((a, b) => a.current.position - b.current.position);
+
+  const resetForm = () => {
+    setForm(emptyExp);
+    setEditing(null);
+  };
+
+  const startEdit = (item) => {
+    setEditing(item);
+    setForm(expToForm(item.current));
+    setState({ message: `Editing “${item.current.title}”.` });
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const fieldsOf = (f) => ({
+    kind: f.kind.trim() || "Internship",
+    title: f.title.trim(),
+    org: f.org.trim() || null,
+    location: f.location.trim() || null,
+    period: f.period.trim() || null,
+    summary: f.summary.trim() || null,
+    points: lines(f.points),
+    position: Number.parseInt(f.position, 10) || 0,
+  });
+
+  // Save `fields` for an item: update its row, or create one (a copy that replaces a built-in).
+  const saveItem = async (item, fields) => {
+    const cur = item?.current;
+    const { error } = cur?.remote
+      ? await supabase.from("experience").update(fields).eq("id", cur.id)
+      : await supabase.from("experience").insert({ ...fields, replaces: item?.base?.id ?? null });
+    if (error) throw error;
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!form.title.trim()) return setState({ error: true, message: "Give the entry a title, e.g. “Frontend Developer”." });
+    setBusy(true);
+    try {
+      const fields = fieldsOf(form);
+      await saveItem(editing, fields);
+      setState({ message: `“${fields.title}” ${editing ? "updated" : "added"}. It now shows on the site.` });
+      resetForm();
+      load();
+    } catch (err) {
+      setState({ error: true, message: err.message });
+    }
+    setBusy(false);
+  };
+
+  const act = async (confirmText, fn, done) => {
+    if (confirmText && !window.confirm(confirmText)) return;
+    setBusy(true);
+    try {
+      await fn();
+      setState({ message: done });
+      if (editing) resetForm();
+      load();
+    } catch (err) {
+      setState({ error: true, message: err.message });
+    }
+    setBusy(false);
+  };
+
+  // Swap positions with the neighbour above or below.
+  const move = (i, dir) => {
+    const a = items[i];
+    const b = items[i + dir];
+    if (!b) return;
+    const pa = a.current.position;
+    const pb = b.current.position === pa ? pa + dir : b.current.position;
+    act(
+      null,
+      async () => {
+        await saveItem(a, { ...fieldsOf(expToForm(a.current)), position: pb });
+        await saveItem(b, { ...fieldsOf(expToForm(b.current)), position: pa });
+      },
+      `Moved “${a.current.title}” ${dir < 0 ? "up" : "down"}.`
+    );
+  };
+
+  const dropRow = async (row) => {
+    const { error } = await supabase.from("experience").delete().eq("id", row.id);
+    if (error) throw error;
+  };
+
+  return (
+    <Section title="Experience & education" index="03">
+      <p className="mt-3 text-[13px] text-ink-2">
+        The timeline in “Where I learned to build”, top to bottom. Add a new role or course, edit any entry, reorder with the arrows, and
+        remove or restore the built-in ones.
+      </p>
+
+      <ul className="mt-4 border-t border-line">
+        {items.map((item, i) => {
+          const { base, current: e } = item;
+          const off = base && hidden.has(String(base.id));
+          return (
+            <li key={base?.id ?? e.id} className={`flex flex-wrap items-center justify-between gap-3 border-b border-line py-3 ${off ? "opacity-60" : ""}`}>
+              <div className="min-w-0">
+                <p className="font-semibold">
+                  {e.title}
+                  {off && <span className="label ml-2 text-signal">Removed from site</span>}
+                </p>
+                <p className="label text-mute">
+                  {[e.kind, e.org, e.period].filter(Boolean).join(" · ")} · {base ? (item.edited ? "Built-in, edited" : "Built-in") : "Added here"}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" className="btn" disabled={busy || i === 0} onClick={() => move(i, -1)} aria-label={`Move ${e.title} up`}>
+                  <span>↑</span>
+                </button>
+                <button type="button" className="btn" disabled={busy || i === items.length - 1} onClick={() => move(i, 1)} aria-label={`Move ${e.title} down`}>
+                  <span>↓</span>
+                </button>
+                <button type="button" className="btn" disabled={busy} onClick={() => startEdit(item)}>
+                  <span>Edit</span>
+                </button>
+                {item.edited && (
+                  <button type="button" className="btn" disabled={busy} onClick={() => act(`Undo your edits to “${base.title}”?`, () => dropRow(e), `“${base.title}” is back to the original.`)}>
+                    <span>Use original</span>
+                  </button>
+                )}
+                {base && off && (
+                  <button
+                    type="button"
+                    className="btn btn-signal"
+                    disabled={busy}
+                    onClick={() =>
+                      act(null, async () => {
+                        const { error } = await unhide("experience", base.id);
+                        if (error) throw error;
+                      }, `“${e.title}” is back on the site.`)
+                    }
+                  >
+                    <span>Restore</span>
+                  </button>
+                )}
+                {base && !off && (
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={busy}
+                    onClick={() =>
+                      act(`Remove “${e.title}” from the site? You can restore it later.`, async () => {
+                        const { error } = await hide("experience", base.id);
+                        if (error) throw error;
+                      }, `Removed “${e.title}” from the site.`)
+                    }
+                  >
+                    <span>Remove</span>
+                  </button>
+                )}
+                {!base && (
+                  <button type="button" className="btn" disabled={busy} onClick={() => act(`Delete “${e.title}”?`, () => dropRow(e), `Deleted “${e.title}”.`)}>
+                    <span>Delete</span>
+                  </button>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div ref={formRef} className="mt-8 flex scroll-mt-6 items-baseline justify-between gap-4">
+        <p className="label text-mute">{editing ? `Editing: ${editing.current.title}` : "Add an entry"}</p>
+        {editing && (
+          <button
+            type="button"
+            className="label underline underline-offset-4"
+            onClick={() => {
+              resetForm();
+              setState(null);
+            }}
+          >
+            Cancel editing
+          </button>
+        )}
+      </div>
+      <form onSubmit={submit} className="mt-3 grid gap-4 md:grid-cols-2">
+        <label className="block">
+          <span className="label text-mute">Type</span>
+          <input list="exp-kinds" value={form.kind} onChange={set("kind")} className={`${field} mt-1`} />
+          <datalist id="exp-kinds">
+            {KINDS.map((k) => (
+              <option key={k} value={k} />
+            ))}
+          </datalist>
+        </label>
+        <label className="block">
+          <span className="label text-mute">Order (lower shows first)</span>
+          <input value={form.position} onChange={set("position")} inputMode="numeric" className={`${field} mt-1`} />
+        </label>
+        <label className="block md:col-span-2">
+          <span className="label text-mute">Title * (role, or course for education)</span>
+          <input required value={form.title} onChange={set("title")} placeholder="e.g. Frontend Developer" className={`${field} mt-1`} />
+        </label>
+        <label className="block">
+          <span className="label text-mute">Company / institution</span>
+          <input value={form.org} onChange={set("org")} className={`${field} mt-1`} />
+        </label>
+        <label className="block">
+          <span className="label text-mute">Location</span>
+          <input value={form.location} onChange={set("location")} placeholder="e.g. Remote or Chennai" className={`${field} mt-1`} />
+        </label>
+        <label className="block md:col-span-2">
+          <span className="label text-mute">Period</span>
+          <input value={form.period} onChange={set("period")} placeholder="e.g. Jan 2026 – Present" className={`${field} mt-1`} />
+        </label>
+        <label className="block md:col-span-2">
+          <span className="label text-mute">Summary</span>
+          <textarea rows={2} value={form.summary} onChange={set("summary")} className={`${field} mt-1`} />
+        </label>
+        <label className="block md:col-span-2">
+          <span className="label text-mute">Highlights — one per line</span>
+          <textarea rows={4} value={form.points} onChange={set("points")} className={`${field} mt-1`} />
+        </label>
+        <div className="md:col-span-2">
+          <button type="submit" className="btn btn-signal" disabled={busy}>
+            <span>{busy ? "Saving…" : editing ? "Save changes" : "Add entry"}</span>
+            <span aria-hidden="true">→</span>
+          </button>
+          <Notice state={state} />
+        </div>
+      </form>
+    </Section>
+  );
+}
+
 /* ---------------- Certifications ---------------- */
 
 const emptyCert = { title: "", issuer: "", date: "", description: "", link: "" };
@@ -848,7 +1131,7 @@ function Certifications() {
   };
 
   return (
-    <Section title="Certifications" index="03">
+    <Section title="Certifications" index="04">
       <p className="mt-3 text-[13px] text-ink-2">
         Every certificate in “Always learning”. Add new ones with a credential link or the certificate itself (PDF or image); visitors get a
         “View certificate” link. Built-in ones can be edited, removed and restored.

@@ -62,6 +62,22 @@ create table if not exists public.certifications (
   file_name    text
 );
 
+-- Experience and education entries added or edited by the owner. `replaces` points at a
+-- built-in entry's id; `position` orders the timeline (lowest first).
+create table if not exists public.experience (
+  id          uuid primary key default gen_random_uuid(),
+  created_at  timestamptz not null default now(),
+  replaces    text unique,
+  kind        text not null default 'Internship' check (char_length(kind) between 1 and 40),
+  title       text not null check (char_length(title) between 1 and 160),
+  org         text,
+  location    text,
+  period      text,
+  summary     text,
+  points      text[] not null default '{}',
+  position    integer not null default 0
+);
+
 -- Built-in items (from the code) that the owner has removed from the site.
 create table if not exists public.hidden (
   kind        text not null,
@@ -70,12 +86,13 @@ create table if not exists public.hidden (
   primary key (kind, item_id)
 );
 alter table public.hidden drop constraint if exists hidden_kind_check;
-alter table public.hidden add constraint hidden_kind_check check (kind in ('project', 'resume', 'certification'));
+alter table public.hidden add constraint hidden_kind_check check (kind in ('project', 'resume', 'certification', 'experience'));
 
 alter table public.projects enable row level security;
 alter table public.resumes  enable row level security;
 alter table public.hidden   enable row level security;
 alter table public.certifications enable row level security;
+alter table public.experience enable row level security;
 
 drop policy if exists "projects are public"      on public.projects;
 drop policy if exists "owner manages projects"   on public.projects;
@@ -83,6 +100,16 @@ drop policy if exists "resumes are public"       on public.resumes;
 drop policy if exists "owner manages resumes"    on public.resumes;
 drop policy if exists "hidden is public"         on public.hidden;
 drop policy if exists "owner manages hidden"     on public.hidden;
+drop policy if exists "experience is public"         on public.experience;
+drop policy if exists "owner manages experience"     on public.experience;
+
+create policy "experience is public" on public.experience
+  for select using (true);
+create policy "owner manages experience" on public.experience
+  for all to authenticated
+  using (public.is_portfolio_owner())
+  with check (public.is_portfolio_owner());
+
 drop policy if exists "certifications are public"    on public.certifications;
 drop policy if exists "owner manages certifications" on public.certifications;
 
