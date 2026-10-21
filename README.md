@@ -1,12 +1,38 @@
 # Muhammadhu Anas M — Portfolio
 
-React + Vite site with GSAP/Lenis motion. Content lives in `src/data/portfolioData.js`.
+React + Vite site with GSAP/Lenis motion. Content lives in `src/data/portfolioData.js`; projects live in `src/data/projects.json`.
 
 ```bash
 npm install
 npm run dev      # http://localhost:5173  (admin: /admin.html)
 npm run build    # outputs dist/ with index.html and admin.html
 ```
+
+## Adding a website project
+
+One command screenshots the live site for the cover, reads its title and description, pulls the
+tech stack and year from the GitHub repo, and adds it to the Work gallery:
+
+```bash
+npm run add-project -- https://my-site.vercel.app --github https://github.com/muhammadhuanas72/my-site --subtitle "E-Commerce Website"
+```
+
+Then open `src/data/projects.json`, find the new entry (last web project) and write 2–4
+`features`. Check `title`, `subtitle` and `details` too. Commit the JSON and the new image in
+`public/work/`.
+
+| Option | Use |
+| --- | --- |
+| `--github <url>` | Repo for the GitHub button, tech stack and year |
+| `--title <text>` | Name on the card (default: the site's title) |
+| `--subtitle <text>` | Type line, e.g. "Portfolio Website" (default: "Website") |
+| `--year <yyyy>` | Year on the card (default: repo creation year) |
+| `--image <file>` | Use your own cover image instead of a screenshot |
+| `--data` | Add to "Data & analytics" instead of the web gallery |
+| `--dry` | Preview the entry and cover without changing files |
+
+Needs Chrome or Edge installed (set `CHROME_PATH` if it is somewhere unusual). Already-listed URLs
+are refused.
 
 ## Owner-only editing (resumes and projects)
 
