@@ -7,7 +7,7 @@ export const portfolioData = {
       "UI/UX Enthusiast"
     ],
     introduction: "I build modern, responsive, and user-focused web applications while leveraging AI to accelerate development, improve productivity, and create innovative digital experiences.",
-    avatar: "/media/portrait-photo.webp",
+    avatar: "/media/hero-photo.webp",
     resumeUrl: "/Muhammadhu_Anas_Resume.pdf",
     socials: {
       email: "muhammadhuanas72@gmail.com",

@@ -8,99 +8,31 @@ const { name, titles, socials, avatar } = portfolioData.personalInfo;
 const education = portfolioData.about.timeline[0];
 const internships = portfolioData.experience;
 
-// Callouts pinned to the portrait (positions are % of the portrait box).
+// Callouts pinned to the photo (positions are % of the photo box). `open` places the
+// callout so it never covers the face.
 const markers = [
-  { x: 62, y: 4, code: "01", title: titles[0], note: titles.slice(1).join(" · ") },
-  { x: 41, y: 25, code: "02", title: education.title, note: `${education.year} · Crescent Institute` },
-  { x: 80, y: 47, code: "03", title: `${internships.length}× internships`, note: internships[0].company },
+  { x: 55, y: 36, open: "left-3 bottom-3", code: "01", title: titles[0], note: titles.slice(1).join(" · ") },
+  { x: 41, y: 52, open: "right-3 top-3", code: "02", title: education.title, note: `${education.year} · Crescent Institute` },
+  { x: 61, y: 62, open: "right-3 top-3", code: "03", title: `${internships.length}× internships`, note: internships[0].company },
 ];
-
-const LENS = 96;
 
 export default function Hero() {
   const root = useRef(null);
   const stage = useRef(null);
-  const figure = useRef(null);
-  const photo = useRef(null);
   const coords = useRef(null);
   const [active, setActive] = useState(null);
-  const [touch, setTouch] = useState(false);
 
-  // Cursor lens: pointer sets a target, a rAF loop eases toward it and writes CSS vars.
+  // Live cursor coordinates in the corner of the sheet, like a drafting app's readout.
   useEffect(() => {
     const el = stage.current;
-    const fig = figure.current;
-    const img = photo.current;
-    if (!el || !fig || !img) return;
-
-    setTouch(window.matchMedia("(pointer: coarse)").matches);
-    const target = { x: 0, y: 0, r: 0 };
-    const cur = { x: 0, y: 0, r: 0 };
-    let raf = 0;
-    let running = false;
-    let hideTimer;
-
-    const loop = () => {
-      cur.x += (target.x - cur.x) * 0.18;
-      cur.y += (target.y - cur.y) * 0.18;
-      cur.r += (target.r - cur.r) * 0.14;
-      img.style.setProperty("--lx", `${cur.x.toFixed(1)}px`);
-      img.style.setProperty("--ly", `${cur.y.toFixed(1)}px`);
-      img.style.setProperty("--lr", `${Math.max(cur.r, 0).toFixed(1)}px`);
-      const settled =
-        Math.abs(target.x - cur.x) < 0.2 && Math.abs(target.y - cur.y) < 0.2 && Math.abs(target.r - cur.r) < 0.2;
-      if (settled) {
-        running = false;
-        return;
-      }
-      raf = requestAnimationFrame(loop);
-    };
-    const kick = () => {
-      if (!running) {
-        running = true;
-        raf = requestAnimationFrame(loop);
-      }
-    };
-
+    if (!el) return;
+    const px = (v) => String(Math.max(0, Math.round(v))).padStart(4, "0");
     const move = (e) => {
-      const f = fig.getBoundingClientRect();
-      const s = el.getBoundingClientRect();
-      target.x = e.clientX - f.left;
-      target.y = e.clientY - f.top;
-      if (cur.r < 1) {
-        cur.x = target.x;
-        cur.y = target.y;
-      }
-      target.r = LENS;
-      if (coords.current) {
-        const px = (v) => String(Math.round(v)).padStart(4, "0");
-        coords.current.textContent = `X:${px(e.clientX - s.left)}PX  Y:${px(e.clientY - s.top)}PX`;
-      }
-      clearTimeout(hideTimer);
-      kick();
+      const r = el.getBoundingClientRect();
+      if (coords.current) coords.current.textContent = `X:${px(e.clientX - r.left)}PX  Y:${px(e.clientY - r.top)}PX`;
     };
-    const leave = () => {
-      target.r = 0;
-      kick();
-    };
-    const up = (e) => {
-      if (e.pointerType === "touch") hideTimer = setTimeout(leave, 900);
-    };
-
     el.addEventListener("pointermove", move);
-    el.addEventListener("pointerdown", move);
-    el.addEventListener("pointerleave", leave);
-    el.addEventListener("pointerup", up);
-    el.addEventListener("pointercancel", leave);
-    return () => {
-      cancelAnimationFrame(raf);
-      clearTimeout(hideTimer);
-      el.removeEventListener("pointermove", move);
-      el.removeEventListener("pointerdown", move);
-      el.removeEventListener("pointerleave", leave);
-      el.removeEventListener("pointerup", up);
-      el.removeEventListener("pointercancel", leave);
-    };
+    return () => el.removeEventListener("pointermove", move);
   }, []);
 
   useGsap(root, (add) => {
@@ -128,7 +60,7 @@ export default function Hero() {
       {/* Drawing sheet */}
       <div
         ref={stage}
-        className="relative h-[calc(100svh-var(--nav-h)-112px)] min-h-[460px] touch-pan-y overflow-hidden border-b border-line select-none md:min-h-[560px]"
+        className="relative h-[calc(100svh-var(--nav-h)-112px)] min-h-[460px] overflow-hidden border-b border-line select-none md:min-h-[560px]"
       >
         <Corners />
         <Ruler className="absolute inset-x-0 top-2" />
@@ -146,8 +78,8 @@ export default function Hero() {
         />
 
         <div data-figure-wrap className="absolute inset-x-0 bottom-[9%] top-[7%] flex justify-center">
-          <div ref={figure} className="relative h-full aspect-[510/1400]">
-            {/* Scale bar beside the figure */}
+          <figure className="relative h-full aspect-[720/1280]">
+            {/* Scale bar beside the photo */}
             <div aria-hidden="true" className="absolute -left-14 bottom-0 top-0 hidden w-6 md:block">
               <div className="absolute inset-y-0 left-1/2 w-px bg-mute" />
               <div className="absolute left-0 right-0 top-0 h-px bg-mute" />
@@ -156,30 +88,19 @@ export default function Hero() {
                 [ 1 : 1 ]
               </span>
             </div>
+            <figcaption className="label absolute -top-5 left-0 text-mute">Fig. 01 — {name}</figcaption>
 
-            <img
-              data-print
-              src="/media/portrait-ink.png"
-              alt={`Ink drawing of ${name}`}
-              className="absolute inset-0 h-full w-full object-contain"
-              draggable="false"
-            />
-            <img
-              ref={photo}
-              src={avatar}
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-0 h-full w-full object-contain"
-              draggable="false"
-              style={{
-                "--lx": "0px",
-                "--ly": "0px",
-                "--lr": "0px",
-                maskImage: "radial-gradient(circle var(--lr) at var(--lx) var(--ly), #000 96%, transparent 100%)",
-                WebkitMaskImage:
-                  "radial-gradient(circle var(--lr) at var(--lx) var(--ly), #000 96%, transparent 100%)",
-              }}
-            />
+            <div data-print className="absolute inset-0 overflow-hidden border border-ink bg-paper-2 shadow-[10px_10px_0_0_var(--color-line)]">
+              <img
+                src={avatar}
+                alt={`Photo of ${name}`}
+                width="720"
+                height="1280"
+                fetchPriority="high"
+                className="h-full w-full object-cover"
+                draggable="false"
+              />
+            </div>
 
             {markers.map((m, i) => (
               <div key={m.code} className="absolute" style={{ left: `${m.x}%`, top: `${m.y}%` }}>
@@ -192,14 +113,12 @@ export default function Hero() {
                   onPointerLeave={(e) => e.pointerType === "mouse" && setActive(null)}
                   onFocus={() => setActive(i)}
                   onBlur={() => setActive(null)}
-                  onClick={() => setActive((v) => (v === i ? null : i))}
+                  onClick={() => setActive(i)}
                   className="relative z-10 -ml-[7px] -mt-[7px] block h-[14px] w-[14px] bg-signal before:absolute before:-inset-3 before:content-['']"
                 />
                 <div
                   role="status"
-                  className={`absolute top-3 z-20 w-[200px] bg-signal p-2.5 text-white transition-[opacity,transform] duration-300 ease-out-expo ${
-                    m.x > 60 ? "right-3" : "left-3"
-                  } ${active === i ? "opacity-100" : "pointer-events-none translate-y-1 opacity-0"}`}
+                  className={`absolute z-20 w-[min(200px,42vw)] bg-signal p-2.5 text-white transition-[opacity,transform] duration-300 ease-out-expo ${m.open} ${active === i ? "opacity-100" : "pointer-events-none translate-y-1 opacity-0"}`}
                 >
                   <p className="label opacity-80">[{m.code}]</p>
                   <p className="mt-1 text-[15px] font-semibold uppercase leading-[1.05]">{m.title}</p>
@@ -207,12 +126,10 @@ export default function Hero() {
                 </div>
               </div>
             ))}
-          </div>
+          </figure>
         </div>
 
-        <p className="label absolute bottom-5 left-6 text-mute md:left-8">
-          [ {touch ? "Touch and drag" : "Move your cursor"} to see the real photo ]
-        </p>
+        <p className="label absolute bottom-5 left-6 text-mute md:left-8">[ Hover or tap a marker ]</p>
         <p ref={coords} aria-hidden="true" className="label absolute bottom-5 right-6 hidden text-mute md:right-8 md:block">
           X:0000PX  Y:0000PX
         </p>
