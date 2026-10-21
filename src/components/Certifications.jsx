@@ -18,7 +18,14 @@ const fade = {
 // The portrait's head turn: a 44-frame clip running from looking left (frame 0) through
 // straight ahead (frame 17) to looking right (frame 43). Every frame is a keyframe, so any
 // frame can be shown instantly in either direction; the poster is the straight-ahead frame.
-const TURN = { src: "/videos/portrait-turn.mp4", poster: "/media/portrait-centre.webp", fps: 24, frames: 44, centre: 17 };
+const TURN = {
+  src: "/videos/portrait-turn.mp4",
+  srcMobile: "/videos/portrait-turn-mobile.mp4", // phones show the portrait at half width
+  poster: "/media/portrait-centre.webp",
+  fps: 24,
+  frames: 44,
+  centre: 17,
+};
 const EASE = 0.22; // how quickly the head follows the cursor, per animation frame
 
 // Cursor x across the portrait (0..1) -> clip frame. The centre frame isn't midway through the
@@ -26,19 +33,23 @@ const EASE = 0.22; // how quickly the head follows the cursor, per animation fra
 const frameAt = (x) =>
   x <= 0.5 ? x * 2 * TURN.centre : TURN.centre + (x - 0.5) * 2 * (TURN.frames - 1 - TURN.centre);
 
-// The video never plays; the cursor's position picks the frame shown. Over the portrait the
+// The video never plays; the pointer's position picks the frame shown. Over the portrait the
 // head follows the cursor; anywhere else in the section (the certifications list sits to the
 // right) it looks toward the cursor, so hovering the list turns it to face the list.
-// Touch screens and reduced-motion visitors keep the still, straight-ahead poster.
+// On touch screens the head glances left and right once when the portrait scrolls into view,
+// follows a finger sliding across the portrait, looks right when a certificate is tapped, and
+// returns to centre when the finger lifts. Reduced-motion visitors keep the still poster.
 function Portrait() {
   const field = useRef(null);
   const video = useRef(null);
+  const [small] = useState(() => window.matchMedia("(max-width: 767px)").matches);
 
   useEffect(() => {
     const el = field.current;
     const area = el.closest("section") ?? el; // listen across the whole section
     const v = video.current;
-    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches || prefersReducedMotion()) return;
+    if (prefersReducedMotion()) return;
+    const touchOnly = !window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
     let ready = false;
     let target = TURN.centre; // frame the cursor points at
@@ -48,6 +59,12 @@ function Portrait() {
     let left = 0;
     let width = 1;
     let raf = 0;
+    let ease = EASE;
+    let timers = [];
+    const clearTimers = () => {
+      timers.forEach(clearTimeout);
+      timers = [];
+    };
 
     // One seek at a time: the next frame is requested only after the last one has drawn.
     const seek = (frame) => {
@@ -57,7 +74,7 @@ function Portrait() {
       v.currentTime = (frame + 0.5) / TURN.fps; // middle of the frame, so rounding never lands on a neighbour
     };
     const tick = () => {
-      current += (target - current) * EASE;
+      current += (target - current) * ease;
       if (Math.abs(target - current) < 0.02) current = target;
       seek(Math.round(current));
       raf = current !== target || Math.round(current) !== shown ? requestAnimationFrame(tick) : 0;
@@ -71,19 +88,70 @@ function Portrait() {
       left = r.left;
       width = r.width || 1;
     };
-    const move = (e) => {
-      if (e.pointerType === "touch") return;
+    const aim = (e) => {
+      ease = EASE;
       target = frameAt(Math.min(Math.max((e.clientX - left) / width, 0), 1));
       run();
     };
-    const enter = (e) => {
-      measure();
-      move(e);
+    const move = (e) => {
+      if (e.pointerType === "touch" && !e.buttons) return; // a finger only steers while it's down
+      aim(e);
     };
-    const leave = () => {
+    const enter = (e) => {
+      if (e.pointerType === "touch") return;
+      measure();
+      aim(e);
+    };
+    const leave = (e) => {
+      if (e?.pointerType === "touch") return;
       target = TURN.centre;
       run();
     };
+    // Touch: aim where the finger lands; ease back to centre a moment after it lifts.
+    const down = (e) => {
+      if (e.pointerType !== "touch") return;
+      clearTimers();
+      measure();
+      aim(e);
+    };
+    const up = (e) => {
+      if (e.pointerType !== "touch") return;
+      clearTimers();
+      timers.push(
+        setTimeout(() => {
+          ease = 0.12;
+          target = TURN.centre;
+          run();
+        }, 900)
+      );
+    };
+    // A slow look left, then right, then back to centre, the first time the portrait is seen.
+    const glance = () => {
+      clearTimers();
+      ease = 0.07;
+      const step = (frame, at) =>
+        timers.push(
+          setTimeout(() => {
+            target = frame;
+            run();
+          }, at)
+        );
+      step(0, 0);
+      step(TURN.frames - 1, 1100);
+      step(TURN.centre, 2300);
+    };
+    let seen = !touchOnly;
+    let wantGlance = false;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (seen || !entry.isIntersecting) return;
+        seen = true;
+        if (ready) glance();
+        else wantGlance = true;
+      },
+      { threshold: 0.6 }
+    );
+    io.observe(el);
     const onSeeked = () => {
       seeking = false;
       run(); // catch up if the cursor moved on while that frame was drawing
@@ -92,6 +160,7 @@ function Portrait() {
       ready = true;
       shown = -1;
       seek(Math.round(current));
+      if (wantGlance) glance();
     };
 
     v.addEventListener("seeked", onSeeked);
@@ -99,6 +168,9 @@ function Portrait() {
     area.addEventListener("pointerenter", enter);
     area.addEventListener("pointermove", move);
     area.addEventListener("pointerleave", leave);
+    area.addEventListener("pointerdown", down);
+    area.addEventListener("pointerup", up);
+    area.addEventListener("pointercancel", up);
     window.addEventListener("resize", measure);
     // Only now fetch the clip; until it can draw a frame the poster shows the same pose.
     v.preload = "auto";
@@ -106,6 +178,11 @@ function Portrait() {
 
     return () => {
       cancelAnimationFrame(raf);
+      clearTimers();
+      io.disconnect();
+      area.removeEventListener("pointerdown", down);
+      area.removeEventListener("pointerup", up);
+      area.removeEventListener("pointercancel", up);
       v.removeEventListener("seeked", onSeeked);
       v.removeEventListener("loadeddata", onReady);
       area.removeEventListener("pointerenter", enter);
@@ -116,10 +193,10 @@ function Portrait() {
   }, []);
 
   return (
-    <div ref={field} className="absolute inset-0">
+    <div ref={field} className="absolute inset-0 touch-pan-y">
       <video
         ref={video}
-        src={TURN.src}
+        src={small ? TURN.srcMobile : TURN.src}
         poster={TURN.poster}
         muted
         playsInline
@@ -143,18 +220,20 @@ export default function Certifications() {
 
   return (
     <section id="certifications" className="border-b border-line">
-      <div className="grid md:grid-cols-2">
+      <div className="grid grid-cols-2">
         {/* Drawing, straight on the sheet like the hero: no frame; the head follows the cursor */}
-        <div className="relative min-h-[420px] overflow-hidden md:min-h-[640px]">
+        <div className="relative min-h-[360px] overflow-hidden md:min-h-[640px]">
           <Portrait />
-          <p className="label pointer-events-none absolute bottom-4 left-4 text-mute">[ {certifications.length} certifications ]</p>
+          <p className="label pointer-events-none absolute bottom-4 left-4 z-10 hidden text-mute md:block">
+            [ {certifications.length} certifications ]
+          </p>
         </div>
 
         {/* Accordion */}
         <div className="flex flex-col">
-          <div className="px-4 pb-6 pt-10 md:px-[10%] md:pt-14">
+          <div className="px-3 pb-4 pt-6 md:px-[10%] md:pb-6 md:pt-14">
             <Eyebrow>Certifications</Eyebrow>
-            <h2 className="display mt-3 text-[clamp(30px,3.5vw,52px)]">
+            <h2 className="display mt-2 text-[22px] md:mt-3 md:text-[clamp(30px,3.5vw,52px)]">
               Always
               <br />
               learning
@@ -171,10 +250,10 @@ export default function Certifications() {
                       aria-expanded={isOpen}
                       aria-controls={`${c.id}-panel`}
                       onClick={() => setOpen(isOpen ? -1 : i)}
-                      className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left md:px-0"
+                      className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left md:gap-4 md:px-0 md:py-4"
                     >
-                      <span className="display text-[clamp(17px,1.5vw,22px)]">{c.title}</span>
-                      <span aria-hidden="true" className={`text-[18px] text-mute transition-transform duration-500 ease-out-expo ${isOpen ? "rotate-45" : ""}`}>
+                      <span className="display text-[12px] leading-[1.15]! md:text-[clamp(17px,1.5vw,22px)] md:leading-[0.98]!">{c.title}</span>
+                      <span aria-hidden="true" className={`text-[14px] text-mute md:text-[18px] transition-transform duration-500 ease-out-expo ${isOpen ? "rotate-45" : ""}`}>
                         +
                       </span>
                     </button>
@@ -185,19 +264,19 @@ export default function Certifications() {
                     className={`grid transition-[grid-template-rows] duration-500 ease-out-expo ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
                   >
                     <div className="overflow-hidden">
-                      <div className="px-4 pb-5 md:px-0">
-                        <p className="label text-mute">
+                      <div className="px-3 pb-3 md:px-0 md:pb-5">
+                        <p className="label text-[9px]! text-mute md:text-[11px]!">
                           {[c.issuer, c.date].filter(Boolean).join(" · ")}
                         </p>
                         {c.description && (
-                          <p className="mt-2 max-w-[56ch] text-[14px] leading-snug text-ink-2">{c.description}</p>
+                          <p className="mt-1.5 max-w-[56ch] text-[11px] leading-snug text-ink-2 md:mt-2 md:text-[14px]">{c.description}</p>
                         )}
                         {linkOf(c) && (
                           <a
                             href={linkOf(c)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="label mt-3 inline-flex items-center gap-1.5 text-signal underline-offset-4 hover:underline"
+                            className="label mt-2 inline-flex items-center gap-1.5 text-[9px]! text-signal underline-offset-4 hover:underline md:mt-3 md:text-[11px]!"
                           >
                             View certificate <span aria-hidden="true">↗</span>
                           </a>
