@@ -21,9 +21,9 @@ const facts = [
 // Callouts pinned to the photo (positions are % of the photo box). `open` places the
 // callout so it never covers the face.
 const markers = [
-  { x: 54, y: 18, open: "left-3 top-3", code: "01", title: titles[0], note: titles.slice(1).join(" · ") },
-  { x: 49, y: 34, open: "right-3 top-3", code: "02", title: education.title, note: `${education.year} · Crescent Institute` },
-  { x: 57, y: 51, open: "left-3 top-3", code: "03", title: `${internships.length}× internships`, note: internships[0].company },
+  { x: 50, y: 18, open: "left-3 top-3", code: "01", title: titles[0], note: titles.slice(1).join(" · ") },
+  { x: 50.5, y: 33, open: "right-3 top-3", code: "02", title: education.title, note: `${education.year} · Crescent Institute` },
+  { x: 55, y: 50, open: "left-3 top-3", code: "03", title: `${internships.length}× internships`, note: internships[0].company },
 ];
 
 export default function Hero() {
@@ -117,7 +117,6 @@ export default function Hero() {
     add(MOTION_OK, () => {
       const tl = gsap.timeline({ delay: 0.15 + BOOT_DELAY, defaults: { ease: "expo.out" } });
       tl.from("[data-print]", { clipPath: "inset(100% 0 0 0)", duration: 1.8, ease: "power3.inOut" })
-        .from("[data-ground]", { scaleX: 0, duration: 1.2 }, 0.2)
         .from("[data-marker]", { scale: 0, duration: 0.6, stagger: 0.12 }, 1.2)
         .from("[data-rise] [data-word]", { yPercent: 110, duration: 1.1, stagger: 0.04 }, 0.5)
         .from("[data-meta]", { opacity: 0, y: 12, duration: 0.8, stagger: 0.08 }, 0.9);
@@ -126,7 +125,7 @@ export default function Hero() {
     // Scroll: the drawing drifts up a little slower than the page, like a sheet sliding under glass.
     add(DESKTOP, () => {
       gsap.to("[data-figure-wrap]", {
-        yPercent: -8,
+        yPercent: -6,
         ease: "none",
         scrollTrigger: { trigger: stage.current, start: "top top", end: "bottom top", scrub: true },
       });
@@ -135,7 +134,7 @@ export default function Hero() {
 
   return (
     <section id="hero" ref={root} className="pt-[var(--nav-h)]">
-      {/* Drawing sheet: who I am on the left, the photo on the right */}
+      {/* Drawing sheet: who I am on the left; the drawing fills the right and runs on behind the text */}
       <div
         ref={stage}
         className="relative grid overflow-hidden border-b border-line md:h-[calc(100svh-var(--nav-h)-112px)] md:min-h-[600px] md:grid-cols-12"
@@ -188,40 +187,31 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Photo */}
-        <div className="relative order-1 h-[min(78svh,640px)] select-none border-b border-line md:order-2 md:col-span-6 md:h-auto md:border-b-0 md:border-l">
-          <div aria-hidden="true" className="dash-y absolute inset-y-6 left-1/2 w-px opacity-70" />
-          <div
-            aria-hidden="true"
-            data-ground
-            className="absolute bottom-[8%] left-[8%] right-[8%] h-[1.5px] origin-center bg-ink"
-          />
-
-          <div data-figure-wrap className="absolute inset-x-0 bottom-[8%] top-[9%] flex justify-center md:top-[8%]">
+        {/* Drawing. On desktop it overflows this column to the left, under the text, where it
+            softens into a blur and then into the paper. On phones it fills its own block. */}
+        <div className="relative order-1 h-[min(78svh,640px)] select-none overflow-hidden border-b border-line md:order-2 md:col-span-6 md:h-auto md:overflow-visible md:border-b-0">
+          <div data-figure-wrap className="absolute inset-0">
             <figure
               ref={figure}
               data-cursor="Click and drag to measure"
-              className="relative h-full max-w-[92%] aspect-[956/1086] touch-pan-y"
+              className="absolute left-1/2 top-0 h-full -translate-x-[49%] aspect-[1448/1086] touch-pan-y md:-top-[4%] md:left-auto md:right-0 md:h-[110%] md:translate-x-0"
             >
-              <figcaption className="label absolute -top-5 left-0 text-mute">Fig. 01 — {name}</figcaption>
-
-              {/* No frame: the drawing sits straight on the sheet, its cropped edges fading into the paper */}
               <div data-print className="absolute inset-0 overflow-hidden">
+                <img
+                  src="/media/hero-illustration-wide.webp"
+                  alt=""
+                  aria-hidden="true"
+                  decoding="async"
+                  className="hero-soft absolute inset-0 hidden h-full w-full md:block"
+                  draggable="false"
+                />
                 <img
                   src={avatar}
                   alt={`Drawing of ${name} on the steps of a building`}
-                  width="956"
+                  width="1448"
                   height="1086"
                   fetchPriority="high"
-                  className="h-full w-full object-cover"
-                  style={{
-                    maskImage:
-                      "linear-gradient(to right, transparent, #000 4%, #000 96%, transparent), linear-gradient(to bottom, transparent, #000 3%, #000 95%, transparent)",
-                    maskComposite: "intersect",
-                    WebkitMaskImage:
-                      "linear-gradient(to right, transparent, #000 4%, #000 96%, transparent), linear-gradient(to bottom, transparent, #000 3%, #000 95%, transparent)",
-                    WebkitMaskComposite: "source-in",
-                  }}
+                  className="hero-sharp absolute inset-0 h-full w-full"
                   draggable="false"
                 />
                 <div
@@ -260,11 +250,12 @@ export default function Hero() {
             </figure>
           </div>
 
-          <p className="label absolute bottom-3 left-6 text-mute md:bottom-5">
+          <p className="label absolute left-5 top-4 z-10 text-mute md:left-auto md:right-6 md:top-6">Fig. 01 — {name}</p>
+          <p className="label absolute bottom-3 left-6 z-10 text-mute md:bottom-5 md:left-auto md:right-6 md:text-right">
             <span className="pointer-coarse:hidden">[ Click and drag to measure · hover a marker ]</span>
             <span className="hidden pointer-coarse:inline">[ Tap a marker ]</span>
           </p>
-          <p ref={coords} aria-hidden="true" className="label absolute bottom-5 right-6 hidden text-mute md:block">
+          <p ref={coords} aria-hidden="true" className="label absolute bottom-10 right-6 z-10 hidden text-mute md:block">
             X:0000PX  Y:0000PX
           </p>
         </div>

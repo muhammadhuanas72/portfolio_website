@@ -290,3 +290,26 @@ html.lenis body {
 .crosshair-on .crosshair {
   opacity: 1;
 }
+
+/* Hero drawing: on desktop it runs left under the text column. The sharp copy fades out
+   over the middle; a blurred copy carries the left end and dissolves into the paper. */
+@media (min-width: 768px) {
+  .hero-sharp {
+    mask-image: linear-gradient(to right, transparent 22%, #000 46%),
+      linear-gradient(to bottom, transparent, #000 6%, #000 93%, transparent);
+    mask-composite: intersect;
+    -webkit-mask-image: linear-gradient(to right, transparent 22%, #000 46%),
+      linear-gradient(to bottom, transparent, #000 6%, #000 93%, transparent);
+    -webkit-mask-composite: source-in;
+  }
+  .hero-soft {
+    filter: blur(6px);
+    opacity: 0.55;
+    mask-image: linear-gradient(to right, transparent 4%, #000 20%, #000 34%, transparent 48%),
+      linear-gradient(to bottom, transparent, #000 8%, #000 90%, transparent);
+    mask-composite: intersect;
+    -webkit-mask-image: linear-gradient(to right, transparent 4%, #000 20%, #000 34%, transparent 48%),
+      linear-gradient(to bottom, transparent, #000 8%, #000 90%, transparent);
+    -webkit-mask-composite: source-in;
+  }
+}
