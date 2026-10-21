@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { portfolioData } from "../data/portfolioData";
-import { gsap, useGsap, scrollToId, MOTION_OK, DESKTOP } from "../lib/motion";
+import { gsap, useGsap, scrollToId, prefersReducedMotion, MOTION_OK, DESKTOP } from "../lib/motion";
 import { Corners, ResumeMenu, Ruler, Words } from "./ui";
 import { BOOT_DELAY } from "../lib/boot";
 
@@ -9,6 +9,103 @@ const education = portfolioData.about.timeline[0];
 const internships = portfolioData.experience;
 const latest = internships[0]; // listed newest first
 const skill = (id) => portfolioData.skills.categories.find((c) => c.id === id).items;
+
+// The drawing builds itself on load: construction lines, the plants and doorway, then the
+// figure (a 4 s clip, 48 fps). It ends on its last frame, which is the finished drawing.
+const DRAW = {
+  src: "/videos/hero-draw.mp4",
+  srcMobile: "/videos/hero-draw-mobile.mp4",
+  still: avatar,
+  stillMobile: "/media/hero-drawn-mobile.webp",
+};
+// The clip is framed tighter than the drawing sheet: this places it at the same scale and
+// position inside the sheet, and fades its top and bottom edges into the paper.
+const PLACE = { left: "-1.56%", top: "11.31%", width: "103.12%", height: "77.34%" };
+const FEATHER = "linear-gradient(to bottom, transparent, #000 8%, #000 90%, transparent)";
+const placed = { ...PLACE, maskImage: FEATHER, WebkitMaskImage: FEATHER };
+
+// Plays the build-up once, after the boot intro. Reduced motion, a clip that can't start
+// within a few seconds (slow connection) or blocked playback show the finished drawing.
+function HeroDrawing({ onDone }) {
+  const video = useRef(null);
+  const doneRef = useRef(onDone);
+  const told = useRef(false);
+  const done = () => {
+    if (told.current) return;
+    told.current = true;
+    doneRef.current();
+  };
+  const [small] = useState(() => window.matchMedia("(max-width: 767px)").matches);
+  const [still, setStill] = useState(() => prefersReducedMotion());
+
+  useEffect(() => {
+    if (still) {
+      done();
+      return;
+    }
+    const v = video.current;
+    let finished = false;
+    const finish = (showStill) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(giveUp);
+      if (showStill) {
+        v.pause();
+        setStill(true);
+      }
+      done();
+    };
+    const reveal = () => {
+      clearTimeout(giveUp);
+      v.style.opacity = "1";
+    };
+    const start = setTimeout(() => v.play().catch(() => finish(true)), (BOOT_DELAY + 0.15) * 1000);
+    const giveUp = setTimeout(() => finish(true), (BOOT_DELAY + 5) * 1000);
+    const onEnded = () => finish(false);
+    const onError = () => finish(true);
+    v.addEventListener("playing", reveal);
+    v.addEventListener("ended", onEnded);
+    v.addEventListener("error", onError);
+    return () => {
+      clearTimeout(start);
+      clearTimeout(giveUp);
+      v.removeEventListener("playing", reveal);
+      v.removeEventListener("ended", onEnded);
+      v.removeEventListener("error", onError);
+    };
+  }, [still]);
+
+  const label = `Drawing of ${name} on the steps of a building`;
+  return (
+    <div className="hero-fade absolute inset-0">
+      {still ? (
+        <img
+          src={small ? DRAW.stillMobile : DRAW.still}
+          alt={label}
+          fetchPriority="high"
+          className="absolute max-w-none object-cover"
+          style={placed}
+          draggable="false"
+        />
+      ) : (
+        <video
+          ref={video}
+          src={small ? DRAW.srcMobile : DRAW.src}
+          muted
+          playsInline
+          preload="auto"
+          disablePictureInPicture
+          disableRemotePlayback
+          tabIndex={-1}
+          role="img"
+          aria-label={label}
+          className="absolute max-w-none object-cover opacity-0"
+          style={placed}
+        />
+      )}
+    </div>
+  );
+}
 
 const facts = [
   { k: "Based in", v: socials.location },
@@ -36,6 +133,8 @@ export default function Hero() {
   const rulerX = useRef(null);
   const rulerY = useRef(null);
   const [active, setActive] = useState(null);
+  // Pop the markers in once the drawing has finished building.
+  const drawn = () => gsap.to(root.current.querySelectorAll("[data-marker]"), { scale: 1, duration: 0.6, stagger: 0.12, ease: "back.out(2)" });
 
   // Drafting interaction: crosshair lines, ruler ticks and a coordinate readout follow the mouse
   // across the sheet; dragging over the drawing measures a selection, like a drafting tool.
@@ -115,9 +214,9 @@ export default function Hero() {
   useGsap(root, (add) => {
     add(MOTION_OK, () => {
       const tl = gsap.timeline({ delay: 0.15 + BOOT_DELAY, defaults: { ease: "expo.out" } });
-      tl.from("[data-print]", { clipPath: "inset(100% 0 0 0)", duration: 1.8, ease: "power3.inOut" })
-        .from("[data-marker]", { scale: 0, duration: 0.6, stagger: 0.12 }, 1.2)
-        .from("[data-rise] [data-word]", { yPercent: 110, duration: 1.1, stagger: 0.04 }, 0.5)
+      // The markers wait for the drawing to finish (see drawn below).
+      gsap.set("[data-marker]", { scale: 0 });
+      tl.from("[data-rise] [data-word]", { yPercent: 110, duration: 1.1, stagger: 0.04 }, 0.5)
         .from("[data-meta]", { opacity: 0, y: 12, duration: 0.8, stagger: 0.08 }, 0.9);
     });
 
@@ -160,15 +259,7 @@ export default function Hero() {
               className="absolute left-1/2 top-0 h-full -translate-x-1/2 aspect-[1448/1086] touch-pan-y"
             >
               <div data-print className="absolute inset-0 overflow-hidden">
-                <img
-                  src={avatar}
-                  alt={`Drawing of ${name} on the steps of a building`}
-                  width="1448"
-                  height="1086"
-                  fetchPriority="high"
-                  className="hero-fade absolute inset-0 h-full w-full"
-                  draggable="false"
-                />
+                <HeroDrawing onDone={drawn} />
                 <div
                   ref={sel}
                   aria-hidden="true"
@@ -243,7 +334,7 @@ export default function Hero() {
           <button
             type="button"
             onClick={() => scrollToId("work")}
-            className="group label flex w-full items-center justify-between gap-2 text-signal md:block md:text-left"
+            className="group label flex w-full items-center justify-between gap-2 py-2 text-signal md:block md:py-0 md:text-left"
           >
             <span>View my work</span>
             <span aria-hidden="true" className="text-[15px] transition-transform duration-500 ease-out-expo group-hover:translate-x-1 md:hidden">→</span>
