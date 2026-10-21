@@ -60,12 +60,15 @@ page just explains that editing isn't connected.
 
 Then open `/admin.html`, enter the owner email, and use the link that arrives.
 
-- **Resumes**: upload a PDF (under 5 MB) for "Software Developer" or "Data Analyst".
-  It replaces that resume everywhere on the site. "Revert" goes back to the built-in file
-  in `public/resume/`.
-- **Projects**: add a title, category (web build or data & analytics), description,
-  highlights, tech, links and an optional screenshot (PNG/JPG/WebP under 4 MB).
-  Added projects appear after the built-in ones and can be deleted from the same page.
+- **Resumes**: "Replace PDF" swaps the file for any resume (PDF under 5 MB); "Add another
+  resume" adds a new one with its own name. Built-in resumes (in `public/resume/`) can be
+  removed from the site and restored, or switched back with "Use original"; added ones can
+  be deleted.
+- **Projects**: every project is listed. Built-in ones (`src/data/projects.json`) can be
+  removed from the site and restored; the form adds new ones (title, category, description,
+  highlights, tech, links, screenshot PNG/JPG/WebP under 4 MB), which can be deleted.
+
+Removing a built-in item only hides it (the `hidden` table); nothing in the code changes.
 
 ## Deploying on Render
 

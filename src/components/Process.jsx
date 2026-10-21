@@ -1,23 +1,22 @@
 import { useRef } from "react";
 import { portfolioData } from "../data/portfolioData";
+import { useContent } from "../lib/contentContext";
 import { gsap, useGsap, scrollToId, DESKTOP, MOBILE } from "../lib/motion";
 import { Corners } from "./ui";
 
 const { passions } = portfolioData.about;
-// The wireframe flags the three shipped web builds.
-const projects = portfolioData.projects.filter((p) => p.category === "web").slice(0, 3);
 
-const captions = [
+const captionsFor = (count) => [
   { title: passions[0].title, text: passions[0].description, hint: "Scroll to continue" },
   { title: passions[1].title, text: passions[1].description, hint: "Scroll to continue" },
   { title: passions[2].title, text: passions[2].description, hint: "Scroll to continue" },
-  { title: "Selected work", text: `${projects.length} builds, each shipped and live.`, hint: "Click on a marker" },
+  { title: "Selected work", text: `${count} builds, each shipped and live.`, hint: "Click on a marker" },
 ];
 
 // Wireframe of a web page, drawn in a 800×560 sheet. Every fragment starts scattered and
 // slides into place; "wall" strokes then thicken like a floor plan being inked.
 const VB = { x: -70, y: -70, w: 940, h: 700 };
-const CARDS = [30, 285, 540].map((x, i) => ({ x, y: 360, w: 230, h: 150, project: projects[i] }));
+const CARDS = [30, 285, 540].map((x) => ({ x, y: 360, w: 230, h: 150 }));
 
 const fragments = [
   <rect key="frame" data-wall strokeWidth="8" x="0" y="0" width="800" height="560" />,
@@ -95,6 +94,12 @@ const scatter = (i) => {
 export default function Process() {
   const root = useRef(null);
   const pin = useRef(null);
+  // The wireframe's cards flag the first three web builds still on the site; the gallery
+  // lists web builds in the same order, so marker i opens gallery panel i.
+  const { projects } = useContent();
+  const web = projects.filter((p) => p.category !== "data");
+  const flagged = web.slice(0, 3);
+  const captions = captionsFor(web.length);
 
   useGsap(root, (add) => {
     const build = (length) => () => {
@@ -175,7 +180,7 @@ export default function Process() {
           </svg>
 
           {/* Project markers, positioned in sheet coordinates */}
-          {CARDS.map((c, i) => (
+          {CARDS.slice(0, flagged.length).map((c, i) => (
             <button
               key={c.x}
               type="button"
@@ -189,11 +194,11 @@ export default function Process() {
                 left: `${((c.x + 14 - VB.x) / VB.w) * 100}%`,
                 top: `${((c.y + 40 - VB.y) / VB.h) * 100}%`,
               }}
-              aria-label={`View project ${i + 1}: ${c.project.title}`}
+              aria-label={`View project ${i + 1}: ${flagged[i].title}`}
             >
               <span className="label flex h-6 w-6 items-center justify-center bg-signal text-white">0{i + 1}</span>
               <span className="label hidden whitespace-nowrap bg-paper px-1.5 py-0.5 text-ink shadow-[0_0_0_1px_var(--color-line)] transition-colors group-hover:bg-signal group-hover:text-white md:inline">
-                {c.project.title}
+                {flagged[i].title}
               </span>
             </button>
           ))}

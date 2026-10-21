@@ -105,6 +105,8 @@ export function ResumeMenu({ label = "Resume", up = false, align = "left", class
     };
   }, []);
 
+  if (!resumes.length) return null;
+
   return (
     <details ref={ref} className={`group/menu relative ${className}`}>
       <summary className="btn cursor-pointer list-none [&::-webkit-details-marker]:hidden">

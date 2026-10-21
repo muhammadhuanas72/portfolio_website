@@ -130,97 +130,194 @@ function Notice({ state }) {
 
 /* ---------------- Resumes ---------------- */
 
+// The owner's removals of built-in items, as a Set of ids for one kind.
+async function loadHidden(kind) {
+  const { data, error } = await supabase.from("hidden").select("item_id").eq("kind", kind);
+  if (error) throw error;
+  return new Set(data.map((r) => r.item_id));
+}
+const hide = (kind, id) => supabase.from("hidden").upsert({ kind, item_id: String(id) });
+const unhide = (kind, id) => supabase.from("hidden").delete().eq("kind", kind).eq("item_id", String(id));
+
+const slugify = (v) =>
+  v
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 50) || "resume";
+
+const pdfError = (file) =>
+  file.type !== "application/pdf" ? "Resumes must be PDF files." : file.size > LIMITS.resumeBytes ? "Keep resumes under 5 MB." : null;
+
 function Resumes() {
   const [rows, setRows] = useState([]);
+  const [hidden, setHidden] = useState(new Set());
   const [state, setState] = useState(null);
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const { data, error } = await supabase.from("resumes").select("*");
-    if (error) setState({ error: true, message: error.message });
-    else setRows(data.map(toResume));
+    try {
+      const [{ data, error }, h] = await Promise.all([
+        supabase.from("resumes").select("*").order("created_at", { ascending: true }),
+        loadHidden("resume"),
+      ]);
+      if (error) throw error;
+      setRows(data.map(toResume));
+      setHidden(h);
+    } catch (err) {
+      setState({ error: true, message: err.message });
+    }
   }, []);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  const upload = async (slot, file) => {
-    if (!file) return;
-    if (file.type !== "application/pdf") return setState({ error: true, message: "Resumes must be PDF files." });
-    if (file.size > LIMITS.resumeBytes) return setState({ error: true, message: "Keep resumes under 5 MB." });
+  const builtIn = portfolioData.personalInfo.resumes;
+  const items = [
+    ...builtIn.map((b) => ({ ...b, builtIn: true, upload: rows.find((r) => r.slug === b.slug) })),
+    ...rows.filter((r) => !builtIn.some((b) => b.slug === r.slug)).map((r) => ({ ...r, builtIn: false, upload: r })),
+  ];
 
-    setState({ message: `Uploading ${slot.label} resume…` });
-    const previous = rows.find((r) => r.slug === slot.slug);
-    const path = `${slot.slug}/${Date.now()}.pdf`;
-    const up = await supabase.storage.from(BUCKETS.resumes).upload(path, file, { contentType: "application/pdf" });
-    if (up.error) return setState({ error: true, message: up.error.message });
-
-    const { error } = await supabase
-      .from("resumes")
-      .upsert({ slug: slot.slug, label: slot.label, path, updated_at: new Date().toISOString() });
-    if (error) {
-      await supabase.storage.from(BUCKETS.resumes).remove([path]);
-      return setState({ error: true, message: error.message });
+  const run = async (message, fn) => {
+    setBusy(true);
+    setState({ message });
+    try {
+      const done = await fn();
+      setState({ message: done });
+    } catch (err) {
+      setState({ error: true, message: err.message });
     }
-    if (previous?.path) await supabase.storage.from(BUCKETS.resumes).remove([previous.path]);
-    setState({ message: `${slot.label} resume updated. Visitors will see it on their next visit.` });
+    setBusy(false);
     load();
   };
 
-  const revert = async (slot) => {
-    const current = rows.find((r) => r.slug === slot.slug);
-    if (!current) return;
-    if (!window.confirm(`Remove the uploaded ${slot.label} resume and go back to the built-in file?`)) return;
-    const { error } = await supabase.from("resumes").delete().eq("slug", slot.slug);
-    if (error) return setState({ error: true, message: error.message });
-    await supabase.storage.from(BUCKETS.resumes).remove([current.path]);
-    setState({ message: `${slot.label} resume reverted to the built-in file.` });
-    load();
+  // Upload a PDF into a slot: replaces a built-in or extra resume, or creates a new one.
+  const putPdf = async (slug, label, file, previousPath) => {
+    const path = `${slug}/${Date.now()}.pdf`;
+    const up = await supabase.storage.from(BUCKETS.resumes).upload(path, file, { contentType: "application/pdf" });
+    if (up.error) throw up.error;
+    const { error } = await supabase.from("resumes").upsert({ slug, label, path, updated_at: new Date().toISOString() });
+    if (error) {
+      await supabase.storage.from(BUCKETS.resumes).remove([path]);
+      throw error;
+    }
+    if (previousPath) await supabase.storage.from(BUCKETS.resumes).remove([previousPath]);
+  };
+
+  const replace = (item, file) => {
+    if (!file) return;
+    const bad = pdfError(file);
+    if (bad) return setState({ error: true, message: bad });
+    run(`Uploading the new ${item.label} resume…`, async () => {
+      await putPdf(item.slug, item.label, file, item.upload?.path);
+      if (hidden.has(item.slug)) await unhide("resume", item.slug);
+      return `${item.label} resume replaced. Visitors get the new file on their next visit.`;
+    });
+  };
+
+  const add = (label, file) => {
+    const fail = (message) => {
+      setState({ error: true, message });
+      return false;
+    };
+    const name = label.trim();
+    if (!name) return fail("Give the new resume a name, e.g. “Frontend Developer”.");
+    if (name.length > 60) return fail("Keep the name under 60 characters.");
+    if (!file) return fail("Choose a PDF for the new resume.");
+    const bad = pdfError(file);
+    if (bad) return fail(bad);
+    run(`Adding the ${name} resume…`, async () => {
+      await putPdf(`${slugify(name)}-${Date.now().toString(36)}`, name, file);
+      return `${name} resume added. It now appears in the resume menus.`;
+    });
+    return true;
+  };
+
+  // Built-in: hide it (its file stays in the code). Uploaded extra: delete it and its file.
+  const remove = (item) => {
+    if (item.builtIn) {
+      if (!window.confirm(`Remove the ${item.label} resume from the site? You can restore it later.`)) return;
+      run(`Removing ${item.label}…`, async () => {
+        const { error } = await hide("resume", item.slug);
+        if (error) throw error;
+        return `${item.label} resume removed from the site.`;
+      });
+    } else {
+      if (!window.confirm(`Delete the ${item.label} resume? This deletes the uploaded file.`)) return;
+      run(`Deleting ${item.label}…`, async () => {
+        const { error } = await supabase.from("resumes").delete().eq("slug", item.slug);
+        if (error) throw error;
+        await supabase.storage.from(BUCKETS.resumes).remove([item.path]);
+        return `${item.label} resume deleted.`;
+      });
+    }
+  };
+
+  const restore = (item) =>
+    run(`Restoring ${item.label}…`, async () => {
+      const { error } = await unhide("resume", item.slug);
+      if (error) throw error;
+      return `${item.label} resume is back on the site.`;
+    });
+
+  // Built-in with an upload: drop the upload and go back to the file in the code.
+  const revert = (item) => {
+    if (!window.confirm(`Go back to the original ${item.label} resume? The uploaded file is deleted.`)) return;
+    run(`Reverting ${item.label}…`, async () => {
+      const { error } = await supabase.from("resumes").delete().eq("slug", item.slug);
+      if (error) throw error;
+      await supabase.storage.from(BUCKETS.resumes).remove([item.upload.path]);
+      return `${item.label} resume reverted to the original file.`;
+    });
   };
 
   return (
     <Section title="Resumes" index="01">
       <ul>
-        {portfolioData.personalInfo.resumes.map((slot) => {
-          const current = rows.find((r) => r.slug === slot.slug);
+        {items.map((item) => {
+          const off = item.builtIn && hidden.has(item.slug);
+          const file = item.upload ?? item;
           return (
-            <li key={slot.slug} className="grid gap-3 border-b border-line py-4 md:grid-cols-[1fr_auto] md:items-center">
+            <li key={item.slug} className={`grid gap-3 border-b border-line py-4 md:grid-cols-[1fr_auto] md:items-center ${off ? "opacity-60" : ""}`}>
               <div>
-                <p className="text-[16px] font-semibold">{slot.label}</p>
+                <p className="text-[16px] font-semibold">
+                  {item.label}
+                  {off && <span className="label ml-2 text-signal">Removed from site</span>}
+                </p>
                 <p className="label mt-1 text-mute">
-                  {current ? (
-                    <>
-                      Uploaded {new Date(current.updatedAt).toLocaleString()} ·{" "}
-                      <a href={current.url} target="_blank" rel="noopener noreferrer" className="underline">
-                        open
-                      </a>
-                    </>
-                  ) : (
-                    <>
-                      Built-in file ·{" "}
-                      <a href={slot.url} target="_blank" rel="noopener noreferrer" className="underline">
-                        open
-                      </a>
-                    </>
-                  )}
+                  {item.upload ? `Uploaded ${new Date(item.upload.updatedAt).toLocaleString()}` : "Original file"} ·{" "}
+                  <a href={file.url} target="_blank" rel="noopener noreferrer" className="underline">
+                    open
+                  </a>
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <label className="btn cursor-pointer">
-                  <span>Upload new PDF</span>
+                <label className={`btn cursor-pointer ${busy ? "pointer-events-none opacity-50" : ""}`}>
+                  <span>Replace PDF</span>
                   <input
                     type="file"
                     accept="application/pdf"
                     className="sr-only"
+                    disabled={busy}
                     onChange={(e) => {
-                      upload(slot, e.target.files?.[0]);
+                      replace(item, e.target.files?.[0]);
                       e.target.value = "";
                     }}
                   />
                 </label>
-                {current && (
-                  <button type="button" className="btn" onClick={() => revert(slot)}>
-                    <span>Revert</span>
+                {item.builtIn && item.upload && (
+                  <button type="button" className="btn" disabled={busy} onClick={() => revert(item)}>
+                    <span>Use original</span>
+                  </button>
+                )}
+                {off ? (
+                  <button type="button" className="btn btn-signal" disabled={busy} onClick={() => restore(item)}>
+                    <span>Restore</span>
+                  </button>
+                ) : (
+                  <button type="button" className="btn" disabled={busy} onClick={() => remove(item)}>
+                    <span>{item.builtIn ? "Remove" : "Delete"}</span>
                   </button>
                 )}
               </div>
@@ -228,8 +325,41 @@ function Resumes() {
           );
         })}
       </ul>
+      <AddResume busy={busy} onAdd={add} />
       <Notice state={state} />
     </Section>
+  );
+}
+
+function AddResume({ busy, onAdd }) {
+  const [label, setLabel] = useState("");
+  const [file, setFile] = useState(null);
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (onAdd(label, file)) {
+      setLabel("");
+      setFile(null);
+      e.target.reset();
+    }
+  };
+
+  return (
+    <form onSubmit={submit} className="mt-6 grid gap-3 border border-line p-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
+      <p className="label text-mute md:col-span-3">Add another resume</p>
+      <label className="block">
+        <span className="label text-mute">Name shown on the site</span>
+        <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Frontend Developer" className={`${field} mt-1`} />
+      </label>
+      <label className="block">
+        <span className="label text-mute">PDF, under 5 MB</span>
+        <input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="mt-1 block w-full text-[13px]" />
+      </label>
+      <button type="submit" className="btn btn-signal" disabled={busy}>
+        <span>Add resume</span>
+        <span aria-hidden="true">→</span>
+      </button>
+    </form>
   );
 }
 
@@ -251,15 +381,24 @@ const isUrl = (v) => !v || /^https?:\/\/\S+$/i.test(v);
 
 function Projects() {
   const [rows, setRows] = useState([]);
+  const [hidden, setHidden] = useState(new Set());
   const [form, setForm] = useState(empty);
   const [image, setImage] = useState(null);
   const [state, setState] = useState(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const { data, error } = await supabase.from("projects").select("*").order("created_at", { ascending: true });
-    if (error) setState({ error: true, message: error.message });
-    else setRows(data.map(toProject));
+    try {
+      const [{ data, error }, h] = await Promise.all([
+        supabase.from("projects").select("*").order("created_at", { ascending: true }),
+        loadHidden("project"),
+      ]);
+      if (error) throw error;
+      setRows(data.map(toProject));
+      setHidden(h);
+    } catch (err) {
+      setState({ error: true, message: err.message });
+    }
   }, []);
 
   useEffect(() => {
@@ -314,42 +453,70 @@ function Projects() {
     load();
   };
 
+  // Added here: delete the row and its image. Built-in: hide it (it stays in projects.json).
   const remove = async (p) => {
-    if (!window.confirm(`Delete “${p.title}” from the portfolio?`)) return;
-    const { error } = await supabase.from("projects").delete().eq("id", p.id);
-    if (error) return setState({ error: true, message: error.message });
-    if (p.imagePath) await supabase.storage.from(BUCKETS.images).remove([p.imagePath]);
-    setState({ message: `Deleted “${p.title}”.` });
+    if (p.remote) {
+      if (!window.confirm(`Delete “${p.title}” from the portfolio?`)) return;
+      const { error } = await supabase.from("projects").delete().eq("id", p.id);
+      if (error) return setState({ error: true, message: error.message });
+      if (p.imagePath) await supabase.storage.from(BUCKETS.images).remove([p.imagePath]);
+      setState({ message: `Deleted “${p.title}”.` });
+    } else {
+      if (!window.confirm(`Remove “${p.title}” from the site? You can restore it later.`)) return;
+      const { error } = await hide("project", p.id);
+      if (error) return setState({ error: true, message: error.message });
+      setState({ message: `Removed “${p.title}” from the site.` });
+    }
     load();
   };
+
+  const restore = async (p) => {
+    const { error } = await unhide("project", p.id);
+    if (error) return setState({ error: true, message: error.message });
+    setState({ message: `“${p.title}” is back on the site.` });
+    load();
+  };
+
+  const all = [...portfolioData.projects, ...rows];
 
   return (
     <Section title="Projects" index="02">
       <p className="mt-3 text-[13px] text-ink-2">
-        Projects added here appear after the built-in ones ({portfolioData.projects.length}). Built-in projects are edited in{" "}
-        <code>src/data/projects.json</code>.
+        Every project on the site. Built-in ones (from <code>src/data/projects.json</code>) can be removed and restored; ones added below
+        can be deleted.
       </p>
 
-      {rows.length > 0 && (
-        <ul className="mt-4 border-t border-line">
-          {rows.map((p) => (
-            <li key={p.id} className="flex items-center justify-between gap-4 border-b border-line py-3">
-              <div>
-                <p className="font-semibold">{p.title}</p>
+      <ul className="mt-4 border-t border-line">
+        {all.map((p) => {
+          const off = !p.remote && hidden.has(String(p.id));
+          return (
+            <li key={p.id} className={`flex items-center justify-between gap-4 border-b border-line py-3 ${off ? "opacity-60" : ""}`}>
+              <div className="min-w-0">
+                <p className="truncate font-semibold">
+                  {p.title}
+                  {off && <span className="label ml-2 text-signal">Removed from site</span>}
+                </p>
                 <p className="label text-mute">
                   {p.category === "data" ? "Data & analytics" : "Web build"}
-                  {p.year ? ` · ${p.year}` : ""}
+                  {p.year ? ` · ${p.year}` : ""} · {p.remote ? "Added here" : "Built-in"}
                 </p>
               </div>
-              <button type="button" className="btn" onClick={() => remove(p)}>
-                <span>Delete</span>
-              </button>
+              {off ? (
+                <button type="button" className="btn btn-signal shrink-0" onClick={() => restore(p)}>
+                  <span>Restore</span>
+                </button>
+              ) : (
+                <button type="button" className="btn shrink-0" onClick={() => remove(p)}>
+                  <span>{p.remote ? "Delete" : "Remove"}</span>
+                </button>
+              )}
             </li>
-          ))}
-        </ul>
-      )}
+          );
+        })}
+      </ul>
 
-      <form onSubmit={submit} className="mt-8 grid gap-4 md:grid-cols-2">
+      <p className="label mt-8 text-mute">Add a project</p>
+      <form onSubmit={submit} className="mt-3 grid gap-4 md:grid-cols-2">
         <label className="block md:col-span-2">
           <span className="label text-mute">Title *</span>
           <input required value={form.title} onChange={set("title")} className={`${field} mt-1`} />

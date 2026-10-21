@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ContentContext, baseContent } from "./contentContext";
-import { fetchRemote } from "./remote";
+import { fetchRemote, mergeContent } from "./remote";
 import { ScrollTrigger } from "./motion";
 
 // Built-in content renders immediately; owner uploads from Supabase are merged in when they arrive.
@@ -11,10 +11,7 @@ export function ContentProvider({ children }) {
     let alive = true;
     fetchRemote().then((remote) => {
       if (!alive || !remote) return;
-      setContent({
-        projects: [...baseContent.projects, ...remote.projects],
-        resumes: baseContent.resumes.map((r) => remote.resumes.find((x) => x.slug === r.slug) ?? r),
-      });
+      setContent(mergeContent(baseContent, remote));
     });
     return () => {
       alive = false;

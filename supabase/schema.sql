@@ -28,20 +28,45 @@ create table if not exists public.projects (
   image_path  text
 );
 
+-- A row whose slug matches a built-in resume replaces that file; any other slug is an extra resume.
 create table if not exists public.resumes (
-  slug        text primary key check (slug in ('software-dev', 'data-analyst')),
+  slug        text primary key,
   label       text not null,
   path        text not null,
   updated_at  timestamptz not null default now()
 );
+alter table public.resumes add column if not exists created_at timestamptz not null default now();
+alter table public.resumes drop constraint if exists resumes_slug_check;
+alter table public.resumes drop constraint if exists resumes_slug_format;
+alter table public.resumes add constraint resumes_slug_format check (slug ~ '^[a-z0-9-]{1,80}$');
+alter table public.resumes drop constraint if exists resumes_label_length;
+alter table public.resumes add constraint resumes_label_length check (char_length(label) between 1 and 60);
+
+-- Built-in projects and resumes (from the code) that the owner has removed from the site.
+create table if not exists public.hidden (
+  kind        text not null check (kind in ('project', 'resume')),
+  item_id     text not null,
+  created_at  timestamptz not null default now(),
+  primary key (kind, item_id)
+);
 
 alter table public.projects enable row level security;
 alter table public.resumes  enable row level security;
+alter table public.hidden   enable row level security;
 
 drop policy if exists "projects are public"      on public.projects;
 drop policy if exists "owner manages projects"   on public.projects;
 drop policy if exists "resumes are public"       on public.resumes;
 drop policy if exists "owner manages resumes"    on public.resumes;
+drop policy if exists "hidden is public"         on public.hidden;
+drop policy if exists "owner manages hidden"     on public.hidden;
+
+create policy "hidden is public" on public.hidden
+  for select using (true);
+create policy "owner manages hidden" on public.hidden
+  for all to authenticated
+  using (public.is_portfolio_owner())
+  with check (public.is_portfolio_owner());
 
 create policy "projects are public" on public.projects
   for select using (true);
@@ -70,6 +95,12 @@ on conflict (id) do update
 drop policy if exists "owner uploads portfolio files" on storage.objects;
 drop policy if exists "owner updates portfolio files" on storage.objects;
 drop policy if exists "owner deletes portfolio files" on storage.objects;
+drop policy if exists "owner lists portfolio files"   on storage.objects;
+
+-- Storage looks a file up before removing or replacing it, so deletes need a select policy too.
+create policy "owner lists portfolio files" on storage.objects
+  for select to authenticated
+  using (bucket_id in ('resumes', 'project-images') and public.is_portfolio_owner());
 
 create policy "owner uploads portfolio files" on storage.objects
   for insert to authenticated
