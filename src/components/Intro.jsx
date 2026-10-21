@@ -13,7 +13,7 @@ const LAYERS = [
   { label: frontend[0], detail: "Structure" },
   { label: frontend[1], detail: "Style" },
   { label: frontend[2], detail: "Behaviour" },
-  { label: frontend[5], detail: "Every screen" },
+  { label: frontend.find((s) => s === "Responsive Design"), detail: "Every screen" },
 ];
 
 const W = 150;

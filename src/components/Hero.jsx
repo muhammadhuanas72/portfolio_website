@@ -14,7 +14,7 @@ const facts = [
   { k: "Based in", v: socials.location },
   { k: "Studying", v: `${education.title} · CGPA ${education.cgpa} · ${education.year}` },
   { k: "Experience", v: `${internships.length} internships · ${latest.company}` },
-  { k: "Works with", v: ["HTML5", "JavaScript", ...skill("data").filter((x) => ["SQL (MySQL)", "Power BI"].includes(x)), "Python"].join(" · ") },
+  { k: "Works with", v: ["HTML5", "JavaScript", "React.js", ...skill("data").filter((x) => ["SQL (MySQL)", "Power BI"].includes(x)), "Python"].join(" · ") },
 ];
 
 // Callouts pinned to the photo (positions are % of the photo box). `open` places the

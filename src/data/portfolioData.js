@@ -77,6 +77,7 @@ export const portfolioData = {
           "HTML5",
           "CSS3",
           "JavaScript",
+          "React.js",
           "Bootstrap",
           "Tailwind CSS",
           "Responsive Design",
