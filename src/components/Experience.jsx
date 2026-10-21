@@ -1,114 +1,128 @@
-import { motion } from "framer-motion";
-import { Briefcase, Calendar, ChevronRight } from "lucide-react";
+import { useRef } from "react";
 import { portfolioData } from "../data/portfolioData";
+import { gsap, useGsap, DESKTOP } from "../lib/motion";
+import IsoGlyph from "./IsoGlyph";
+import { Eyebrow, Plus } from "./ui";
+
+const { experience, about } = portfolioData;
+
+const entries = [
+  ...experience.map((e, i) => ({
+    id: e.id,
+    kind: "Internship",
+    title: e.role,
+    org: e.company,
+    period: e.period,
+    summary: e.description,
+    points: e.highlights,
+    glyph: i === 0 ? "layers" : "shaft",
+  })),
+  ...about.timeline.map((t, i) => ({
+    id: t.id,
+    kind: "Education",
+    title: t.title,
+    org: t.institution,
+    period: t.year,
+    summary: t.description,
+    points: [],
+    glyph: i === 0 ? "orb" : "kit",
+  })),
+];
 
 export default function Experience() {
-  const experiences = portfolioData.experience;
+  const root = useRef(null);
+  const pin = useRef(null);
+  const track = useRef(null);
 
-  const itemVariants = {
-    hidden: { opacity: 0, x: -30 },
-    visible: {
-      opacity: 1,
-      x: 0,
-      transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] }
-    }
-  };
+  useGsap(root, (add) => {
+    add(DESKTOP, () => {
+      const distance = () => track.current.scrollWidth - pin.current.clientWidth;
+      gsap.to(track.current, {
+        x: () => -distance(),
+        ease: "none",
+        scrollTrigger: {
+          trigger: pin.current,
+          start: "top top+=62",
+          end: () => `+=${distance()}`,
+          pin: true,
+          scrub: 0.8,
+          invalidateOnRefresh: true,
+        },
+      });
+      gsap.fromTo(
+        "[data-progress]",
+        { scaleX: 0 },
+        {
+          scaleX: 1,
+          ease: "none",
+          scrollTrigger: { trigger: pin.current, start: "top top+=62", end: () => `+=${distance()}`, scrub: true },
+        }
+      );
+    });
+  });
 
   return (
-    <section
-      id="experience"
-      className="relative py-28 px-6 md:px-12 bg-[#050505] overflow-hidden"
-    >
-      {/* Lights */}
-      <div className="absolute top-[40%] right-[0%] w-[35vw] h-[35vw] rounded-full bg-amber-600/[0.015] blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-[20%] left-[0%] w-[30vw] h-[30vw] rounded-full bg-amber-500/[0.015] blur-[120px] pointer-events-none" />
-
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="mb-16 text-center">
-          <motion.p
-            initial={{ opacity: 0, y: 15 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-xs uppercase tracking-widest font-mono text-amber-400 mb-2"
-          >
-            03 / History
-          </motion.p>
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-3xl md:text-5xl font-heading font-extrabold text-white"
-          >
-            Work Experience
-          </motion.h2>
+    <section id="experience" ref={root} className="border-b border-line">
+      <div className="grid gap-6 px-4 pb-10 pt-12 md:grid-cols-12 md:px-6 md:pt-16">
+        <div className="md:col-span-8">
+          <Eyebrow>Experience &amp; education</Eyebrow>
+          <h2 className="display mt-3 text-[clamp(30px,3.5vw,52px)]">
+            Where I learned
+            <br />
+            to build
+          </h2>
         </div>
+        <p className="max-w-[44ch] self-end text-[14px] leading-snug text-ink-2 md:col-span-4">{about.careerObjective}</p>
+      </div>
 
-        {/* Timeline container */}
-        <div className="relative border-l border-neutral-800 ml-4 md:ml-32 pl-10 md:pl-12 space-y-16">
-          {experiences.map((exp) => (
-            <motion.div
-              key={exp.id}
-              variants={itemVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
-              className="relative"
+      <div ref={pin} className="relative overflow-hidden border-t border-line md:h-[calc(100svh-var(--nav-h))]">
+        {/* Signal line running through every stage */}
+        <div aria-hidden="true" className="absolute inset-x-0 top-[calc(46%+26px)] z-0 hidden h-px bg-signal/40 md:block" />
+        <div aria-hidden="true" data-progress className="absolute inset-x-0 top-[calc(46%+26px)] z-0 hidden h-px origin-left bg-signal md:block" />
+
+        <ol ref={track} className="relative flex flex-col md:h-full md:w-max md:flex-row">
+          {entries.map((e, i) => (
+            <li
+              key={e.id}
+              className="relative grid border-b border-line md:h-full md:w-[min(72vw,980px)] md:grid-rows-[46%_auto_1fr] md:border-b-0 md:border-r"
             >
-              {/* Timeline dot */}
-              <span className="absolute left-[-40px] md:left-[-48px] -translate-x-1/2 top-1.5 flex items-center justify-center w-8 h-8 rounded-full bg-[#050505] border-2 border-amber-500 shadow-md">
-                <Briefcase className="w-4 h-4 text-amber-400" />
-              </span>
-
-              {/* Date Box (Absolute position in desktop left) */}
-              <div className="hidden md:block absolute -left-[220px] top-2 text-right w-32">
-                <div className="flex items-center justify-end gap-1.5 text-neutral-500 font-mono text-xs">
-                  <Calendar className="w-3.5 h-3.5" />
-                  <span>{exp.period}</span>
+              {/* Drawing */}
+              <div className="relative flex min-h-[220px] items-center justify-center bg-[linear-gradient(var(--color-line)_1px,transparent_1px),linear-gradient(90deg,var(--color-line)_1px,transparent_1px)] bg-[size:48px_48px] bg-center">
+                <Plus at="tl" />
+                <Plus at="tr" />
+                <IsoGlyph name={e.glyph} className="h-[70%] max-h-[220px] w-auto text-ink-2" />
+                <div className="absolute left-[12%] top-[16%] w-[min(220px,50%)] bg-signal p-2.5 text-white">
+                  <p className="label flex justify-between opacity-90">
+                    <span>{e.kind}</span>
+                    <span>[0{i + 1}]</span>
+                  </p>
+                  <p className="mt-1 text-[15px] font-semibold uppercase leading-[1.05]">{e.period}</p>
                 </div>
               </div>
 
-              {/* Mobile Date indicator */}
-              <div className="md:hidden flex items-center gap-1.5 text-neutral-500 font-mono text-[10px] uppercase tracking-wider mb-2">
-                <Calendar className="w-3 h-3" />
-                <span>{exp.period}</span>
+              {/* Title bar on the line */}
+              <div className="relative z-10 flex flex-col gap-1 bg-ink px-4 py-3 text-paper md:mr-[18%] md:flex-row md:items-center md:justify-between md:gap-6 md:px-6">
+                <h3 className="display text-[clamp(20px,1.9vw,28px)]">{e.title}</h3>
+                <p className="text-[13px] text-paper/70">{e.org}</p>
               </div>
 
-              {/* Experience Card */}
-              <div className="glass-card p-6 md:p-8 rounded-2xl border border-white/5 relative hover:border-amber-500/20">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
-                  <div>
-                    <h3 className="text-lg md:text-xl font-heading font-bold text-white">
-                      {exp.role}
-                    </h3>
-                    <p className="text-sm font-semibold text-amber-400 font-heading">
-                      {exp.company}
-                    </p>
-                  </div>
-                  <span className="self-start md:self-auto px-2.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider font-mono text-amber-400 bg-amber-950/20 border border-amber-800/30">
-                    Internship
-                  </span>
-                </div>
-
-                <p className="text-neutral-400 text-xs md:text-sm leading-relaxed mb-6">
-                  {exp.description}
-                </p>
-
-                {/* Achievements list */}
-                <ul className="space-y-3.5">
-                  {exp.highlights.map((highlight, hIdx) => (
-                    <li key={hIdx} className="flex items-start gap-2.5 text-xs md:text-sm text-neutral-400">
-                      <ChevronRight className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-                      <span>{highlight}</span>
-                    </li>
-                  ))}
-                </ul>
+              {/* Detail */}
+              <div className="grid gap-5 px-4 pb-8 pt-6 md:grid-cols-2 md:px-6">
+                <p className="text-[14px] leading-snug text-ink-2">{e.summary}</p>
+                {e.points.length > 0 && (
+                  <ul className="space-y-2">
+                    {e.points.map((pt, k) => (
+                      <li key={pt} className="flex gap-3 text-[13px] leading-snug">
+                        <span className="label pt-0.5 text-mute">{String(k + 1).padStart(2, "0")}</span>
+                        {pt}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-            </motion.div>
+            </li>
           ))}
-        </div>
+        </ol>
       </div>
     </section>
   );
