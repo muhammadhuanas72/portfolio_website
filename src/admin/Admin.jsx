@@ -663,7 +663,7 @@ function Projects() {
           <input value={form.tech} onChange={set("tech")} placeholder="Power BI, DAX, SQL" className={`${field} mt-1`} />
         </label>
         <label className="block">
-          <span className="label text-mute">Live demo URL</span>
+          <span className="label text-mute">Live demo URL · for Power BI, the “Publish to web” link</span>
           <input type="url" value={form.demo_url} onChange={set("demo_url")} placeholder="https://" className={`${field} mt-1`} />
         </label>
         <label className="block">
@@ -683,6 +683,9 @@ function Projects() {
         <div className="block">
           <label className="block">
             <span className="label text-mute">Project file (.pbix, .xlsx, .xls, .csv, .pdf, .zip, under 50 MB)</span>
+            <span className="mt-1 block text-[12px] text-ink-2">
+              Visitors press View: Excel and PDF files open on the page; for .pbix they see the screenshot.
+            </span>
             <input
               type="file"
               accept=".pbix,.xlsx,.xls,.csv,.pdf,.zip"

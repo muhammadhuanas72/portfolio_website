@@ -41,6 +41,12 @@ export function useSmoothScroll() {
   }, []);
 }
 
+// Freeze smooth scrolling while a modal is open, so the wheel scrolls the modal, not the page.
+export function pauseScroll(paused) {
+  if (paused) lenis?.stop();
+  else lenis?.start();
+}
+
 export function scrollToId(id) {
   const el = document.getElementById(id);
   if (!el) return;

@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useContent } from "../lib/contentContext";
+import { pauseScroll } from "../lib/motion";
 import IsoGlyph from "./IsoGlyph";
 import { Btn, Eyebrow, Plus } from "./ui";
 
@@ -190,6 +191,81 @@ function Details({ p, i }) {
 
 const dataGlyphs = ["bars", "orb", "shaft"];
 
+const extOf = (name = "") => (name.includes(".") ? name.split(".").pop().toLowerCase() : "");
+
+// What "View" opens for a data project, best first: a Power BI publish-to-web report, the
+// uploaded PDF or Excel file (Excel through Microsoft's free web viewer), else the screenshot.
+// Power BI .pbix files can't be shown in a browser, so for those the screenshot is the view.
+function viewOf(p) {
+  if (p.demoUrl && /^https:\/\/app\.powerbi\.com\/(view|reportEmbed)/i.test(p.demoUrl)) return { kind: "frame", src: p.demoUrl, label: "Power BI report" };
+  const ext = extOf(p.fileName || p.filePath);
+  if (p.file && ext === "pdf") return { kind: "frame", src: p.file, label: "PDF" };
+  if (p.file && (ext === "xlsx" || ext === "xls"))
+    return { kind: "frame", src: `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(p.file)}`, label: "Excel workbook" };
+  if (p.image) return { kind: "image", src: p.image, label: "Screenshot" };
+  return null;
+}
+
+function ViewBtn({ p }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Btn onClick={() => setOpen(true)} signal>
+        View
+      </Btn>
+      {open && <Viewer p={p} view={viewOf(p)} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+// Full-screen viewer on a native <dialog>: Esc and the close button dismiss it.
+function Viewer({ p, view, onClose }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const d = ref.current;
+    d.showModal();
+    pauseScroll(true);
+    return () => pauseScroll(false);
+  }, []);
+
+  return (
+    <dialog
+      ref={ref}
+      onClose={onClose}
+      onClick={(e) => e.target === ref.current && onClose()}
+      aria-label={`${p.title}: ${view.label}`}
+      data-lenis-prevent
+      className="m-auto h-[min(92svh,900px)] w-[min(96vw,1400px)] max-w-none border border-ink bg-paper p-0 text-ink backdrop:bg-ink/70"
+    >
+      <div className="flex h-full flex-col">
+        <div className="label flex items-center justify-between gap-4 border-b border-line px-4 py-3">
+          <span className="truncate">
+            {p.title} <span className="text-mute">· {view.label}</span>
+          </span>
+          <div className="flex shrink-0 items-center gap-4">
+            {view.kind === "frame" && (
+              <a href={view.src} target="_blank" rel="noopener noreferrer" className="underline-offset-4 hover:underline">
+                Open in new tab ↗
+              </a>
+            )}
+            <button type="button" onClick={onClose} className="btn" autoFocus>
+              <span>Close</span>
+              <span aria-hidden="true">✕</span>
+            </button>
+          </div>
+        </div>
+        <div className="relative min-h-0 flex-1 bg-paper-2">
+          {view.kind === "frame" ? (
+            <iframe src={view.src} title={`${p.title}: ${view.label}`} className="absolute inset-0 h-full w-full border-0" allowFullScreen />
+          ) : (
+            <img src={view.src} alt={`${p.title} screenshot`} className="absolute inset-0 h-full w-full object-contain p-4" />
+          )}
+        </div>
+      </div>
+    </dialog>
+  );
+}
+
 function DataProject({ p, i }) {
   return (
     <article className="flex flex-col border-b border-line md:[&:nth-child(odd)]:border-r lg:border-r lg:[&:nth-child(3n)]:border-r-0">
@@ -225,10 +301,10 @@ function DataProject({ p, i }) {
         )}
         <div className="mt-auto pt-2">
           <Tags items={p.tech} />
-          {(p.demoUrl || p.githubUrl || p.file) && (
+          {(viewOf(p) || p.demoUrl || p.githubUrl) && (
             <div className="mt-4 flex flex-wrap gap-2">
-              {p.file && <FileBtn p={p} signal={!p.demoUrl} />}
-              {p.demoUrl && (
+              {viewOf(p) && <ViewBtn p={p} />}
+              {p.demoUrl && !viewOf(p) && (
                 <Btn href={p.demoUrl} external signal>
                   View
                 </Btn>
