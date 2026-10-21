@@ -300,3 +300,25 @@ html.lenis body {
     linear-gradient(to bottom, transparent, #000 5%, #000 88%, transparent);
   -webkit-mask-composite: source-in;
 }
+
+/* Excel sheets rendered in the data-project viewer (SheetJS output). */
+.xl-sheet table {
+  border-collapse: collapse;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-ink);
+  background: var(--color-paper);
+}
+.xl-sheet td,
+.xl-sheet th {
+  border: 1px solid var(--color-line);
+  padding: 4px 10px;
+  white-space: nowrap;
+  vertical-align: top;
+}
+.xl-sheet tr:first-child td {
+  position: sticky;
+  top: -12px;
+  background: var(--color-paper-2);
+  font-weight: 600;
+}
