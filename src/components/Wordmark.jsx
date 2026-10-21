@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef } from "react";
 import { useContent } from "../lib/contentContext";
 import { layoutWord, toPath } from "../lib/glyphs";
-import { gsap, ScrollTrigger, prefersReducedMotion } from "../lib/motion";
+import { gsap, prefersReducedMotion } from "../lib/motion";
 import { portfolioData } from "../data/portfolioData";
 
 const WORD = "ANAS M.";
@@ -30,11 +30,9 @@ const hatchFor = (g) => {
 // Radius that floods the whole letter from any point inside its box.
 const floodRadius = (g) => Math.hypot(g.w, 112) + 8;
 
-// Ink fill: hatching slides in, then a wet ink blot spreads, its ragged edge settling as it
-// grows. Reaching the bottom of the page inks every letter in turn, rising from the baseline,
-// and scrolling back up drains them. Otherwise hovering inks a letter from where the cursor
-// entered and leaving drains it; a soft highlight follows the cursor over inked letters.
-// Taps toggle a letter on touch screens.
+// Ink fill on hover: hatching slides in, then a wet ink blot spreads from where the cursor
+// entered, its ragged edge settling as it grows; a soft highlight follows the cursor. Leaving
+// drains the ink back toward the exit point. Taps toggle a letter on touch screens.
 function useInk(svgRef, uid) {
   useEffect(() => {
     const svg = svgRef.current;
@@ -46,9 +44,8 @@ function useInk(svgRef, uid) {
       return { x: pt.x, y: pt.y };
     };
     const state = glyphs.map(() => ({ on: false, drift: null }));
-    let inked = false; // the whole word is inked because the page reached the bottom
 
-    const fill = (i, at, delay = 0) => {
+    const fill = (i, at) => {
       const s = state[i];
       if (s.on) return;
       s.on = true;
@@ -56,10 +53,10 @@ function useInk(svgRef, uid) {
       const disp = q(`#${uid}-disp${i}`);
       gsap.killTweensOf([blot, disp]);
       if (Number(blot.getAttribute("r")) < 1) gsap.set(blot, { attr: { cx: at.x, cy: at.y } });
-      gsap.to(q(`[data-outline="${i}"]`), { stroke: "#6b1d2e", duration: t(0.25), delay: t(delay), overwrite: "auto" });
-      gsap.to(q(`[data-hatch="${i}"]`), { opacity: 1, duration: t(0.25), delay: t(delay), overwrite: "auto" });
-      gsap.fromTo(disp, { attr: { scale: 26 } }, { attr: { scale: 7 }, duration: t(1.1), delay: t(delay), ease: "power2.out" });
-      gsap.to(blot, { attr: { r: floodRadius(glyphs[i]) }, duration: t(0.95), delay: t(delay + 0.08), ease: "power3.out" });
+      gsap.to(q(`[data-outline="${i}"]`), { stroke: "#6b1d2e", duration: t(0.25), overwrite: "auto" });
+      gsap.to(q(`[data-hatch="${i}"]`), { opacity: 1, duration: t(0.25), overwrite: "auto" });
+      gsap.fromTo(disp, { attr: { scale: 26 } }, { attr: { scale: 7 }, duration: t(1.1), ease: "power2.out" });
+      gsap.to(blot, { attr: { r: floodRadius(glyphs[i]) }, duration: t(0.95), delay: t(0.08), ease: "power3.out" });
       if (!reduced) {
         s.drift ??= gsap.fromTo(
           q(`[data-hatch-lines="${i}"]`),
@@ -69,23 +66,23 @@ function useInk(svgRef, uid) {
         s.drift.play();
       }
     };
-    const drain = (i, at, delay = 0) => {
+    const drain = (i, at) => {
       const s = state[i];
       if (!s.on) return;
       s.on = false;
       const blot = q(`[data-blot="${i}"]`);
       const disp = q(`#${uid}-disp${i}`);
       gsap.killTweensOf([blot, disp]);
-      gsap.to(disp, { attr: { scale: 20 }, duration: t(0.5), delay: t(delay), ease: "power1.in" });
-      gsap.to(blot, { attr: { r: 0, cx: at.x, cy: at.y }, duration: t(0.6), delay: t(delay), ease: "power2.in" });
+      gsap.to(disp, { attr: { scale: 20 }, duration: t(0.5), ease: "power1.in" });
+      gsap.to(blot, { attr: { r: 0, cx: at.x, cy: at.y }, duration: t(0.6), ease: "power2.in" });
       gsap.to(q(`[data-hatch="${i}"]`), {
         opacity: 0,
         duration: t(0.45),
-        delay: t(delay + 0.15),
+        delay: t(0.15),
         overwrite: "auto",
         onComplete: () => !s.on && s.drift?.pause(),
       });
-      gsap.to(q(`[data-outline="${i}"]`), { stroke: "#282828", duration: t(0.4), delay: t(delay + 0.2), overwrite: "auto" });
+      gsap.to(q(`[data-outline="${i}"]`), { stroke: "#282828", duration: t(0.4), delay: t(0.2), overwrite: "auto" });
       gsap.to(q(`[data-shine="${i}"]`), { opacity: 0, duration: t(0.3), overwrite: "auto" });
     };
     const shine = (i, at) =>
@@ -95,23 +92,6 @@ function useInk(svgRef, uid) {
       const i = e.target?.getAttribute?.("data-outline");
       return i == null ? -1 : Number(i);
     };
-    // Each letter's baseline centre: where the ink rises from when the whole word fills.
-    const base = (i) => ({ x: glyphs[i].x + glyphs[i].w / 2, y: 104 });
-    const inkAll = () => {
-      inked = true;
-      glyphs.forEach((_, i) => fill(i, base(i), i * 0.12));
-    };
-    const drainAll = () => {
-      inked = false;
-      glyphs.forEach((_, i) => drain(i, base(i), (glyphs.length - 1 - i) * 0.08));
-    };
-    const trigger = ScrollTrigger.create({
-      trigger: svg,
-      start: "bottom bottom", // the whole word is on screen: the visitor has reached the bottom
-      onEnter: inkAll,
-      onLeaveBack: drainAll,
-    });
-
     const over = (e) => {
       if (e.pointerType === "touch") return;
       const i = index(e);
@@ -120,9 +100,7 @@ function useInk(svgRef, uid) {
     const out = (e) => {
       if (e.pointerType === "touch") return;
       const i = index(e);
-      if (i < 0) return;
-      if (inked) gsap.to(q(`[data-shine="${i}"]`), { opacity: 0, duration: t(0.3), overwrite: "auto" });
-      else drain(i, toSvg(e));
+      if (i >= 0) drain(i, toSvg(e));
     };
     const move = (e) => {
       if (e.pointerType === "touch") return;
@@ -147,7 +125,6 @@ function useInk(svgRef, uid) {
       svg.removeEventListener("pointerout", out);
       svg.removeEventListener("pointermove", move);
       svg.removeEventListener("pointerdown", tap);
-      trigger.kill();
       state.forEach((s) => s.drift?.kill());
       gsap.killTweensOf(svg.querySelectorAll("*"));
     };
