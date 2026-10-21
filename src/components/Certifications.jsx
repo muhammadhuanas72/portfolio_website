@@ -1,71 +1,39 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { portfolioData } from "../data/portfolioData";
-import { gsap, useGsap, DESKTOP } from "../lib/motion";
-import RenderReveal from "./RenderReveal";
 import { Corners, Eyebrow } from "./ui";
 
 const { certifications } = portfolioData;
 const { name } = portfolioData.personalInfo;
 
-// Perspective floor grid converging on a vanishing point, as in an architectural elevation.
-function FloorGrid() {
-  const vx = 50;
-  const rays = [-60, -30, -10, 5, 18, 30, 42, 58, 70, 82, 95, 110, 130, 160];
-  const rows = [0, 6, 14, 25, 40];
-  return (
-    <svg viewBox="0 0 100 40" preserveAspectRatio="none" className="absolute inset-x-0 bottom-0 h-[20%] w-full" aria-hidden="true">
-      <g stroke="var(--color-ink)" strokeWidth="0.15" fill="none" vectorEffect="non-scaling-stroke">
-        {rays.map((x) => (
-          <line key={x} x1={vx + (x - vx) * 0.12} y1="0" x2={x} y2="40" vectorEffect="non-scaling-stroke" />
-        ))}
-        {rows.map((y) => (
-          <line key={y} x1="0" y1={y} x2="100" y2={y} vectorEffect="non-scaling-stroke" />
-        ))}
-      </g>
-    </svg>
-  );
-}
+// Soft edge so the drawing dissolves into the paper instead of ending in a hard rectangle.
+const fade = {
+  maskImage:
+    "linear-gradient(to right, transparent, #000 10%, #000 90%, transparent), linear-gradient(to bottom, transparent, #000 6%, #000 92%, transparent)",
+  maskComposite: "intersect",
+  WebkitMaskImage:
+    "linear-gradient(to right, transparent, #000 10%, #000 90%, transparent), linear-gradient(to bottom, transparent, #000 6%, #000 92%, transparent)",
+  WebkitMaskComposite: "source-in",
+};
 
 export default function Certifications() {
-  const root = useRef(null);
   const [open, setOpen] = useState(0);
 
-  useGsap(root, (add) => {
-    add(DESKTOP, () => {
-      const st = { trigger: root.current, start: "top bottom", end: "bottom top", scrub: true };
-      gsap.fromTo("[data-disc]", { yPercent: 40 }, { yPercent: -40, ease: "none", scrollTrigger: st });
-      gsap.fromTo("[data-figure]", { y: 30 }, { y: -20, ease: "none", scrollTrigger: st });
-    });
-  });
-
   return (
-    <section id="certifications" ref={root} className="border-b border-line">
+    <section id="certifications" className="border-b border-line">
       <div className="grid md:grid-cols-2">
-        {/* Composition */}
-        <div className="relative min-h-[380px] overflow-hidden border-b border-line bg-paper-2 md:min-h-[640px] md:border-b-0 md:border-r">
+        {/* Drawing, straight on the sheet like the hero: no frame, no animation */}
+        <div className="relative min-h-[420px] overflow-hidden border-b border-line md:min-h-[640px] md:border-b-0 md:border-r">
+          <img
+            src="/media/learning.webp"
+            alt={`Drawing of ${name} standing in a technical construction layout`}
+            width="1536"
+            height="1024"
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-cover object-center"
+            style={fade}
+          />
           <Corners />
-          {/* Construction lines */}
-          <div aria-hidden="true" className="dash-x absolute inset-x-0 top-[12%] h-px" />
-          <div aria-hidden="true" className="absolute bottom-[20%] left-[10%] top-[6%] w-px bg-line" />
-          <div aria-hidden="true" className="absolute bottom-[20%] right-[10%] top-[6%] w-px bg-line" />
-          <div data-disc aria-hidden="true" className="absolute right-[12%] top-[8%] aspect-square w-[26%] rounded-full bg-signal" />
-          <FloorGrid />
-          <div aria-hidden="true" className="absolute inset-x-0 bottom-[20%] h-px bg-ink" />
-          <span aria-hidden="true" className="absolute bottom-[7%] left-[14%] h-2.5 w-2.5 bg-signal" />
-
-          <div data-figure className="absolute bottom-[20%] left-1/2 h-[70%] -translate-x-1/2 aspect-[1024/1280]">
-            <div aria-hidden="true" className="absolute -left-[14%] -right-[14%] top-[18%] h-px bg-ink/50" />
-            <div aria-hidden="true" className="absolute -bottom-[6%] -top-[6%] left-[24%] w-px bg-ink/40" />
-            <RenderReveal
-              lines="/media/hero-photo-lines.webp"
-              src="/media/hero-photo.webp"
-              alt={`Photo of ${name}`}
-              className="h-full w-full border border-ink shadow-[8px_8px_0_0_var(--color-line)]"
-              imgClassName="object-cover"
-              start="top 80%"
-              end="center 50%"
-            />
-          </div>
           <p className="label absolute bottom-4 left-4 text-mute">[ {certifications.length} certifications ]</p>
         </div>
 
