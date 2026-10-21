@@ -67,33 +67,6 @@ Then open `/admin.html`, enter the owner email, and use the link that arrives.
   highlights, tech, links and an optional screenshot (PNG/JPG/WebP under 4 MB).
   Added projects appear after the built-in ones and can be deleted from the same page.
 
-### Add projects with AI
-
-The **Add with AI** box on `/admin.html` takes a live link (and optionally the GitHub repo).
-The `analyse-project` function opens the site in a real browser, reads its text and code,
-asks Claude (Opus 5.5) what kind of project it is, and fills in the title, type, category,
-description, features and tech, with a 1600 × 724 cover screenshot. **Analyse** fills the
-form for you to check; **Analyse and publish** saves it straight away.
-
-The function checks the caller is the owner and keeps the API key on the server; visitors
-can't reach it. One-time setup, from the project folder:
-
-```bash
-npx supabase login
-npx supabase link --project-ref <your project ref>      # from the Supabase dashboard URL
-npx supabase secrets set ANTHROPIC_API_KEY=sk-ant-... OWNER_EMAIL=muhammadhuanas72@gmail.com
-npx supabase functions deploy analyse-project
-```
-
-Get the API key at <https://platform.claude.com> (Settings → API keys). Each analysis
-costs roughly $0.05–0.15. Optional secrets: `GITHUB_TOKEN` (a read-only token, if GitHub
-starts rate-limiting) and `MICROLINK_API_KEY` (the free screenshot service allows about
-25 a day without one).
-
-The AI can fall back to another Claude model if it declines a request (server-side
-fallbacks are on). If a site can't be screenshotted, the draft still fills in and you can
-add an image yourself.
-
 ## Deploying on Render
 
 Static site · Build command `npm install && npm run build` · Publish directory `dist`.
