@@ -1,6 +1,7 @@
 import { useSmoothScroll } from "./lib/motion";
 import { ContentProvider } from "./lib/content";
 import Cursor from "./components/Cursor";
+import Scribble from "./components/Scribble";
 import Boot from "./components/Boot";
 import Nav from "./components/Nav";
 import Hero from "./components/Hero";
@@ -19,6 +20,7 @@ export default function App() {
     <ContentProvider>
       <div className="grain">
         <Boot />
+        <Scribble />
         <Cursor />
         <Nav />
         <div className="site">

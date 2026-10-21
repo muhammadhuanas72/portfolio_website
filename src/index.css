@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* ---------- Design tokens: drafting paper, graphite ink, one signal orange (as on Heron) ---------- */
+/* ---------- Design tokens: drafting paper, graphite ink, one dark burgundy accent ---------- */
 @theme {
   --font-sans: "Inter Tight", system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, monospace;
@@ -12,7 +12,7 @@
   --color-mute: #8a8a87;
   --color-faint: #b4b4b0;
   --color-line: rgba(40, 40, 40, 0.16);
-  --color-signal: #f54400;
+  --color-signal: #6b1d2e;
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
