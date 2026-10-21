@@ -153,11 +153,11 @@ export default function Intro() {
       {/* Tool strip, like a client-logo bar */}
       <div className="grid border-t border-line md:grid-cols-[180px_1fr]">
         <p className="label flex items-center border-b border-line px-4 py-3 md:border-b-0 md:border-r md:px-6">Daily tools</p>
-        <ul className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7">
+        <ul className="flex flex-wrap">
           {tools.map((t) => (
             <li
               key={t}
-              className="flex h-16 items-center justify-center border-b border-r border-line px-2 text-center text-[14px] font-semibold uppercase leading-tight tracking-[-0.03em] text-ink-2 md:h-20 lg:border-b-0 lg:last:border-r-0"
+              className="flex h-16 grow basis-1/2 items-center justify-center border-b border-r border-line px-2 sm:basis-1/3 lg:basis-0 text-center text-[14px] font-semibold uppercase leading-tight tracking-[-0.03em] text-ink-2 md:h-20 lg:border-b-0 lg:last:border-r-0"
             >
               {t}
             </li>
