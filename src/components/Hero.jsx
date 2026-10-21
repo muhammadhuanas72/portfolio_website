@@ -134,11 +134,8 @@ export default function Hero() {
 
   return (
     <section id="hero" ref={root} className="pt-[var(--nav-h)]">
-      {/* Drawing sheet: who I am on the left; the drawing fills the right and runs on behind the text */}
-      <div
-        ref={stage}
-        className="relative grid overflow-hidden border-b border-line md:h-[calc(100svh-var(--nav-h)-112px)] md:min-h-[600px] md:grid-cols-12"
-      >
+      {/* Drawing sheet: the drawing centred at the top, who I am centred beneath it */}
+      <div ref={stage} className="relative flex flex-col overflow-hidden border-b border-line">
         <Corners />
         <Ruler className="absolute inset-x-0 top-2" />
         <Ruler className="absolute inset-x-0 bottom-2 rotate-180" />
@@ -155,63 +152,22 @@ export default function Hero() {
           <span className="label absolute left-0 top-1.5 bg-paper px-0.5 text-[9px] text-ink">0000</span>
         </div>
 
-        {/* Who am I */}
-        <div className="relative z-10 order-2 flex flex-col justify-center px-5 pb-12 pt-8 md:order-1 md:col-span-6 md:py-12 md:pl-12 md:pr-10 lg:pl-16">
-          <p data-meta className="label flex items-center gap-2">
-            <span aria-hidden="true" className="h-2 w-2 bg-signal" />
-            [00] Who am I
-          </p>
-          <h1 data-rise className="display mt-4 text-[clamp(40px,5.4vw,84px)] leading-[0.92]">
-            <Words text={name} mask />
-          </h1>
-          <p data-meta className="label mt-4 text-mute">{titles.join(" / ")}</p>
-          <div data-meta className="mt-6 max-w-[54ch] space-y-3 text-[15px] leading-snug text-ink-2 md:text-[16px]">
-            <p>{summary.split(". ")[0]}.</p>
-            <p>{analystSummary.split(". ").slice(0, 2).join(". ")}.</p>
-          </div>
-
-          <dl data-meta className="mt-7 max-w-[560px] border-t border-line">
-            {facts.map((f) => (
-              <div key={f.k} className="grid grid-cols-[110px_1fr] gap-4 border-b border-line py-2.5">
-                <dt className="label pt-0.5 text-mute">{f.k}</dt>
-                <dd className="text-[14px] leading-snug">{f.v}</dd>
-              </div>
-            ))}
-          </dl>
-
-          <div data-meta className="mt-8 flex flex-wrap gap-2">
-            <Btn signal onClick={() => scrollToId("work")}>
-              View my work
-            </Btn>
-            <ResumeMenu label="Resumes" up />
-          </div>
-        </div>
-
-        {/* Drawing. On desktop it overflows this column to the left, under the text, where it
-            softens into a blur and then into the paper. On phones it fills its own block. */}
-        <div className="relative order-1 h-[min(78svh,640px)] select-none overflow-hidden border-b border-line md:order-2 md:col-span-6 md:h-auto md:overflow-visible md:border-b-0">
+        {/* Drawing */}
+        <div className="relative h-[min(78svh,640px)] select-none overflow-hidden md:h-[min(calc(100svh-var(--nav-h)-48px),820px)] md:min-h-[520px]">
           <div data-figure-wrap className="absolute inset-0">
             <figure
               ref={figure}
               data-cursor="Click and drag to measure"
-              className="absolute left-1/2 top-0 h-full -translate-x-[49%] aspect-[1448/1086] touch-pan-y md:-top-[4%] md:left-auto md:right-0 md:h-[110%] md:translate-x-0"
+              className="absolute left-1/2 top-0 h-full -translate-x-1/2 aspect-[1448/1086] touch-pan-y"
             >
               <div data-print className="absolute inset-0 overflow-hidden">
-                <img
-                  src="/media/hero-illustration-wide.webp"
-                  alt=""
-                  aria-hidden="true"
-                  decoding="async"
-                  className="hero-soft absolute inset-0 hidden h-full w-full md:block"
-                  draggable="false"
-                />
                 <img
                   src={avatar}
                   alt={`Drawing of ${name} on the steps of a building`}
                   width="1448"
                   height="1086"
                   fetchPriority="high"
-                  className="hero-sharp absolute inset-0 h-full w-full"
+                  className="hero-fade absolute inset-0 h-full w-full"
                   draggable="false"
                 />
                 <div
@@ -250,14 +206,46 @@ export default function Hero() {
             </figure>
           </div>
 
-          <p className="label absolute left-5 top-4 z-10 text-mute md:left-auto md:right-6 md:top-6">Fig. 01 — {name}</p>
-          <p className="label absolute bottom-3 left-6 z-10 text-mute md:bottom-5 md:left-auto md:right-6 md:text-right">
+          <p className="label absolute left-6 top-5 z-10 text-mute md:left-8 md:top-6">Fig. 01 — {name}</p>
+          <p className="label absolute bottom-3 left-6 z-10 text-mute md:bottom-5 md:left-8">
             <span className="pointer-coarse:hidden">[ Click and drag to measure · hover a marker ]</span>
             <span className="hidden pointer-coarse:inline">[ Tap a marker ]</span>
           </p>
-          <p ref={coords} aria-hidden="true" className="label absolute bottom-10 right-6 z-10 hidden text-mute md:block">
+          <p ref={coords} aria-hidden="true" className="label absolute bottom-5 right-8 z-10 hidden text-mute md:block">
             X:0000PX  Y:0000PX
           </p>
+        </div>
+
+        {/* Who am I */}
+        <div className="relative z-10 mx-auto flex w-full max-w-[880px] flex-col items-center px-5 pb-14 pt-4 text-center md:pb-20">
+          <p data-meta className="label flex items-center gap-2">
+            <span aria-hidden="true" className="h-2 w-2 bg-signal" />
+            [00] Who am I
+          </p>
+          <h1 data-rise className="display mt-4 text-[clamp(40px,6.4vw,96px)] leading-[0.92]">
+            <Words text={name} mask />
+          </h1>
+          <p data-meta className="label mt-4 text-mute">{titles.join(" / ")}</p>
+          <div data-meta className="mt-6 max-w-[62ch] space-y-3 text-[15px] leading-snug text-ink-2 md:text-[16px]">
+            <p>{summary.split(". ")[0]}.</p>
+            <p>{analystSummary.split(". ").slice(0, 2).join(". ")}.</p>
+          </div>
+
+          <dl data-meta className="mt-8 grid w-full grid-cols-2 border-l border-t border-line md:grid-cols-4">
+            {facts.map((f) => (
+              <div key={f.k} className="border-b border-r border-line px-3 py-3">
+                <dt className="label text-mute">{f.k}</dt>
+                <dd className="mt-1 text-[14px] leading-snug">{f.v}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <div data-meta className="mt-8 flex flex-wrap justify-center gap-2">
+            <Btn signal onClick={() => scrollToId("work")}>
+              View my work
+            </Btn>
+            <ResumeMenu label="Resumes" up />
+          </div>
         </div>
       </div>
 
