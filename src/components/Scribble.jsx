@@ -2,11 +2,14 @@ import { useEffect, useRef } from "react";
 import { prefersReducedMotion } from "../lib/motion";
 
 const LIFE = 900; // ms a stroke stays on the sheet
-const MAX_POINTS = 90;
+const MAX_POINTS = 120;
+const EASE = 0.32; // how quickly the pen catches up with the pointer
+const STEP = 2.5; // px between recorded samples
 
-// Pencil scribble that trails the pointer in the signal colour and fades out.
-// Each sample is offset by a little seeded wobble and drawn as two thin overlapping
-// strokes, so it reads as a hand-drawn line rather than a smooth vector trail.
+// Smooth pencil scribble that trails the pointer in the accent colour and fades out.
+// The pen follows an eased copy of the pointer, samples are evenly spaced, the wobble is a
+// low-frequency sway along the path (not random jitter), and segments are drawn as
+// quadratic curves through midpoints, so the line flows like a hand-drawn loop.
 export default function Scribble() {
   const canvas = useRef(null);
 
@@ -25,61 +28,90 @@ export default function Scribble() {
     };
     resize();
 
+    const target = { x: 0, y: 0 };
+    const pen = { x: 0, y: 0 };
     const points = [];
+    let started = false;
+    let dist = 0; // distance travelled, drives the sway
     let raf = 0;
-    let seed = 0;
-    const wobble = () => {
-      seed += 1;
-      const x = Math.sin(seed * 12.9898) * 43758.5453;
-      return (x - Math.floor(x) - 0.5) * 2;
+
+    const sample = (now) => {
+      const dx = target.x - pen.x;
+      const dy = target.y - pen.y;
+      pen.x += dx * EASE;
+      pen.y += dy * EASE;
+      const last = points[points.length - 1];
+      const gap = last ? Math.hypot(pen.x - last.bx, pen.y - last.by) : Infinity;
+      if (gap < STEP) return;
+
+      dist += Math.min(gap, 40);
+      // Perpendicular sway: two slow sines layered for an organic, looping line.
+      const len = Math.hypot(dx, dy) || 1;
+      const nx = -dy / len;
+      const ny = dx / len;
+      const speed = Math.min(gap / 8, 1.6);
+      const sway = (Math.sin(dist * 0.06) * 3.2 + Math.sin(dist * 0.023 + 1.3) * 2) * (0.6 + speed);
+      points.push({ bx: pen.x, by: pen.y, x: pen.x + nx * sway, y: pen.y + ny * sway, t: now });
+      if (points.length > MAX_POINTS) points.shift();
+    };
+
+    const stroke = (now, offset, widthScale, alphaScale) => {
+      for (let i = 1; i < points.length - 1; i++) {
+        const p0 = points[i - 1];
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const life = Math.max(1 - (now - p1.t) / LIFE, 0);
+        if (!life) continue;
+        // Fade in at the pen tip too, so the newest segment does not start abruptly.
+        const tip = Math.min((points.length - 1 - i) / 4, 1);
+        ctx.globalAlpha = life * alphaScale * tip;
+        ctx.lineWidth = (0.5 + 1.6 * life) * widthScale;
+        ctx.beginPath();
+        ctx.moveTo((p0.x + p1.x) / 2 + offset, (p0.y + p1.y) / 2 - offset);
+        ctx.quadraticCurveTo(p1.x + offset, p1.y - offset, (p1.x + p2.x) / 2 + offset, (p1.y + p2.y) / 2 - offset);
+        ctx.stroke();
+      }
     };
 
     const draw = (now) => {
-      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      if (started) sample(now);
       while (points.length && now - points[0].t > LIFE) points.shift();
 
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       ctx.strokeStyle = color;
-      for (let pass = 0; pass < 2; pass++) {
-        for (let i = 1; i < points.length; i++) {
-          const a = points[i - 1];
-          const b = points[i];
-          const life = 1 - (now - b.t) / LIFE;
-          ctx.globalAlpha = Math.max(life, 0) * (pass ? 0.5 : 0.95);
-          ctx.lineWidth = pass ? 1 : 1.9 * life + 0.4;
-          ctx.beginPath();
-          ctx.moveTo(a.x + a.j[pass * 2], a.y + a.j[pass * 2 + 1]);
-          ctx.lineTo(b.x + b.j[pass * 2], b.y + b.j[pass * 2 + 1]);
-          ctx.stroke();
-        }
-      }
+      stroke(now, 0, 1, 0.9); // main line
+      stroke(now, 0.9, 0.55, 0.35); // faint second pass, like graphite drag
       ctx.globalAlpha = 1;
-      raf = points.length ? requestAnimationFrame(draw) : 0;
+
+      const moving = Math.abs(target.x - pen.x) + Math.abs(target.y - pen.y) > 0.3;
+      raf = points.length || moving ? requestAnimationFrame(draw) : 0;
     };
 
     const move = (e) => {
       if (e.pointerType !== "mouse") return;
-      const last = points[points.length - 1];
-      if (last && Math.hypot(e.clientX - last.x, e.clientY - last.y) < 2) return;
-      // Faster movement scribbles wider.
-      const speed = last ? Math.min(Math.hypot(e.clientX - last.x, e.clientY - last.y) / 10, 3) : 1;
-      const amp = 2 + speed * 1.4;
-      points.push({
-        x: e.clientX,
-        y: e.clientY,
-        t: performance.now(),
-        j: [wobble() * amp, wobble() * amp, wobble() * amp * 1.6, wobble() * amp * 1.6],
-      });
-      if (points.length > MAX_POINTS) points.shift();
+      target.x = e.clientX;
+      target.y = e.clientY;
+      if (!started) {
+        pen.x = target.x;
+        pen.y = target.y;
+        started = true;
+      }
       if (!raf) raf = requestAnimationFrame(draw);
+    };
+    // Leaving the window lifts the pen, so re-entering elsewhere doesn't draw a long line.
+    const lift = () => {
+      started = false;
     };
 
     window.addEventListener("pointermove", move, { passive: true });
+    document.documentElement.addEventListener("pointerleave", lift);
     window.addEventListener("resize", resize);
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("pointermove", move);
+      document.documentElement.removeEventListener("pointerleave", lift);
       window.removeEventListener("resize", resize);
     };
   }, []);
