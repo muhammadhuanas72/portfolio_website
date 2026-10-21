@@ -21,9 +21,9 @@ const facts = [
 // Callouts pinned to the photo (positions are % of the photo box). `open` places the
 // callout so it never covers the face.
 const markers = [
-  { x: 56, y: 18, open: "left-3 top-3", code: "01", title: titles[0], note: titles.slice(1).join(" · ") },
-  { x: 50, y: 34, open: "right-3 top-3", code: "02", title: education.title, note: `${education.year} · Crescent Institute` },
-  { x: 59, y: 51, open: "left-3 top-3", code: "03", title: `${internships.length}× internships`, note: internships[0].company },
+  { x: 54, y: 18, open: "left-3 top-3", code: "01", title: titles[0], note: titles.slice(1).join(" · ") },
+  { x: 49, y: 34, open: "right-3 top-3", code: "02", title: education.title, note: `${education.year} · Crescent Institute` },
+  { x: 57, y: 51, open: "left-3 top-3", code: "03", title: `${internships.length}× internships`, note: internships[0].company },
 ];
 
 export default function Hero() {
@@ -201,7 +201,7 @@ export default function Hero() {
             <figure
               ref={figure}
               data-cursor="Click and drag to measure"
-              className="relative h-full max-w-[86%] aspect-[869/1086] touch-pan-y"
+              className="relative h-full max-w-[92%] aspect-[956/1086] touch-pan-y"
             >
               <figcaption className="label absolute -top-5 left-0 text-mute">Fig. 01 — {name}</figcaption>
 
@@ -210,16 +210,16 @@ export default function Hero() {
                 <img
                   src={avatar}
                   alt={`Drawing of ${name} on the steps of a building`}
-                  width="869"
+                  width="956"
                   height="1086"
                   fetchPriority="high"
                   className="h-full w-full object-cover"
                   style={{
                     maskImage:
-                      "linear-gradient(to right, transparent, #000 7%, #000 93%, transparent), linear-gradient(to bottom, transparent, #000 5%, #000 92%, transparent)",
+                      "linear-gradient(to right, transparent, #000 4%, #000 96%, transparent), linear-gradient(to bottom, transparent, #000 3%, #000 95%, transparent)",
                     maskComposite: "intersect",
                     WebkitMaskImage:
-                      "linear-gradient(to right, transparent, #000 7%, #000 93%, transparent), linear-gradient(to bottom, transparent, #000 5%, #000 92%, transparent)",
+                      "linear-gradient(to right, transparent, #000 4%, #000 96%, transparent), linear-gradient(to bottom, transparent, #000 3%, #000 95%, transparent)",
                     WebkitMaskComposite: "source-in",
                   }}
                   draggable="false"
