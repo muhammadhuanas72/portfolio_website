@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { portfolioData } from "../data/portfolioData";
 import { gsap, useGsap, scrollToId, MOTION_OK, DESKTOP } from "../lib/motion";
-import { Btn, Corners, ResumeMenu, Ruler, Words } from "./ui";
+import { Corners, ResumeMenu, Ruler, Words } from "./ui";
 import { BOOT_DELAY } from "../lib/boot";
 
 const { name, titles, socials, avatar } = portfolioData.personalInfo;
-const { summary, analystSummary } = portfolioData.about;
 const education = portfolioData.about.timeline[0];
 const internships = portfolioData.experience;
 const latest = internships[internships.length - 1];
@@ -153,7 +152,7 @@ export default function Hero() {
         </div>
 
         {/* Drawing */}
-        <div className="relative h-[min(78svh,640px)] select-none overflow-hidden md:h-[min(calc(100svh-var(--nav-h)-48px),820px)] md:min-h-[520px]">
+        <div className="relative h-[min(78svh,640px)] select-none overflow-hidden md:h-[calc(100svh-var(--nav-h)-176px)] md:min-h-[460px]">
           <div data-figure-wrap className="absolute inset-0">
             <figure
               ref={figure}
@@ -216,75 +215,55 @@ export default function Hero() {
           </p>
         </div>
 
-        {/* Who am I */}
-        <div className="relative z-10 mx-auto flex w-full max-w-[880px] flex-col items-center px-5 pb-14 pt-4 text-center md:pb-20">
-          <p data-meta className="label flex items-center gap-2">
-            <span aria-hidden="true" className="h-2 w-2 bg-signal" />
-            [00] Who am I
-          </p>
-          <h1 data-rise className="display mt-4 text-[clamp(40px,6.4vw,96px)] leading-[0.92]">
-            <Words text={name} mask />
-          </h1>
-          <p data-meta className="label mt-4 text-mute">{titles.join(" / ")}</p>
-          <div data-meta className="mt-6 max-w-[62ch] space-y-3 text-[15px] leading-snug text-ink-2 md:text-[16px]">
-            <p>{summary.split(". ")[0]}.</p>
-            <p>{analystSummary.split(". ").slice(0, 2).join(". ")}.</p>
-          </div>
-
-          <dl data-meta className="mt-8 grid w-full grid-cols-2 border-l border-t border-line md:grid-cols-4">
-            {facts.map((f) => (
-              <div key={f.k} className="border-b border-r border-line px-3 py-3">
-                <dt className="label text-mute">{f.k}</dt>
-                <dd className="mt-1 text-[14px] leading-snug">{f.v}</dd>
-              </div>
-            ))}
-          </dl>
-
-          <div data-meta className="mt-8 flex flex-wrap justify-center gap-2">
-            <Btn signal onClick={() => scrollToId("work")}>
-              View my work
-            </Btn>
-            <ResumeMenu label="Resumes" up />
-          </div>
-        </div>
       </div>
 
-      {/* Title block */}
-      <div className="grid border-b border-line md:grid-cols-12">
-        <p data-rise className="display px-4 pb-6 pt-5 text-[clamp(30px,4.1vw,60px)] md:col-span-7 md:px-6">
-          <Words text={portfolioData.personalInfo.introduction.split(" while ")[0]} mask />
-        </p>
-        <div data-meta className="border-t border-line px-4 py-5 md:col-span-3 md:border-l md:border-t-0">
-          <p className="label text-mute">Latest role</p>
-          <p className="mt-2 text-[17px] font-semibold uppercase leading-tight">{latest.role}</p>
-          <p className="label mt-1 text-mute">
-            {latest.company} · {latest.period}
-          </p>
-        </div>
-        <button
-          type="button"
-          data-meta
-          onClick={() => scrollToId("intro")}
-          className="group flex items-end justify-between border-t border-line px-4 py-5 text-left md:col-span-2 md:flex-col md:items-start md:border-l md:border-t-0"
+      {/* Title bar, as on the reference: name | intro | link, with a ticker under the right half */}
+      <div className="grid grid-cols-[minmax(0,1fr)] border-b border-line md:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)_minmax(150px,190px)] md:grid-rows-[1fr_auto]">
+        <h1
+          data-rise
+          className="display px-4 pb-6 pt-6 text-[clamp(38px,4.6vw,68px)] leading-[0.95] md:row-span-2 md:flex md:items-center md:px-8"
         >
-          <span className="label text-mute">{socials.location}</span>
-          <span className="label flex items-center gap-2 text-signal">
-            Scroll <span className="transition-transform duration-500 ease-out-expo group-hover:translate-y-1">↓</span>
+          {/* Two deliberate lines: first name, then the rest */}
+          <span>
+            <span className="block">
+              <Words text={name.split(" ")[0]} mask />
+            </span>
+            <span className="block">
+              <Words text={name.split(" ").slice(1).join(" ")} mask />
+            </span>
           </span>
-        </button>
-      </div>
+        </h1>
 
-      <Marquee />
+        <div data-meta className="border-t border-line px-4 py-4 md:border-l md:border-t-0 md:px-4">
+          <p className="label text-mute">{titles.join(" / ")}</p>
+          <p className="mt-2 text-[15px] leading-snug text-ink-2 md:text-[16px]">{portfolioData.personalInfo.introduction}</p>
+        </div>
+
+        <div data-meta className="flex items-start justify-between gap-4 border-t border-line px-4 py-4 md:flex-col md:border-l md:border-t-0">
+          <button
+            type="button"
+            onClick={() => scrollToId("work")}
+            className="group label flex w-full items-center justify-between gap-2 text-signal md:block md:text-left"
+          >
+            <span>View my work</span>
+            <span aria-hidden="true" className="text-[15px] transition-transform duration-500 ease-out-expo group-hover:translate-x-1 md:hidden">→</span>
+          </button>
+          <ResumeMenu label="Resumes" up align="right" className="md:mt-auto md:self-stretch" />
+        </div>
+
+        <div className="min-w-0 overflow-hidden border-t border-line md:col-span-2 md:col-start-2 md:border-l">
+          <Marquee items={facts.flatMap((f) => f.v.split(" · "))} label="Profile" />
+        </div>
+      </div>
     </section>
   );
 }
 
-function Marquee() {
-  const items = portfolioData.skills.categories.find((c) => c.id === "ai-dev").items;
+function Marquee({ items, label }) {
   const row = (
     <ul className="flex shrink-0 items-center">
       {items.map((t) => (
-        <li key={t} className="label flex items-center gap-3 px-4 text-mute">
+        <li key={t} className="label flex items-center gap-3 whitespace-nowrap px-4 text-mute">
           <span aria-hidden="true" className="h-2 w-2 rounded-full border border-mute" />
           {t}
         </li>
@@ -292,7 +271,7 @@ function Marquee() {
     </ul>
   );
   return (
-    <div className="overflow-hidden border-b border-line py-2.5" aria-label="AI-assisted development skills">
+    <div className="overflow-hidden py-2.5" aria-label={label}>
       <div className="marquee-track flex w-max">
         {row}
         <div aria-hidden="true" className="flex">
