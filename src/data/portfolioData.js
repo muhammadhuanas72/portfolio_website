@@ -6,6 +6,8 @@ export const portfolioData = {
       "Web Developer",
       "UI/UX Enthusiast"
     ],
+    headline: ["I draft", "the web", "in code."],
+    statement: "I build modern, responsive, user-focused web applications — and use AI to build them faster.",
     introduction: "I build modern, responsive, and user-focused web applications while leveraging AI to accelerate development, improve productivity, and create innovative digital experiences.",
     avatar: "/profile_nobg.png",
     resumeUrl: "/Muhammadhu_Anas_Resume.pdf",
@@ -264,7 +266,7 @@ export const portfolioData = {
     {
       id: "cert-5",
       title: "Object Detection & Computer Vision",
-      issuer: "Cognizant / Academic Program", // Placeholder issuer
+      issuer: null,
       date: "2023",
       link: "#",
       description: "Mastered fundamental OpenCV techniques, image processing filters, convolutional networks, and live feed object boundary mapping."
