@@ -1,4 +1,6 @@
 import { useSmoothScroll } from "./lib/motion";
+import { ContentProvider } from "./lib/content";
+import Cursor from "./components/Cursor";
 import Boot from "./components/Boot";
 import Nav from "./components/Nav";
 import Hero from "./components/Hero";
@@ -14,21 +16,24 @@ export default function App() {
   useSmoothScroll();
 
   return (
-    <div className="grain">
-      <Boot />
-      <Nav />
-      <div className="site">
-        <main>
-          <Hero />
-          <Intro />
-          <Capabilities />
-          <Process />
-          <Work />
-          <Experience />
-          <Certifications />
-        </main>
-        <Contact />
+    <ContentProvider>
+      <div className="grain">
+        <Boot />
+        <Cursor />
+        <Nav />
+        <div className="site">
+          <main>
+            <Hero />
+            <Intro />
+            <Capabilities />
+            <Process />
+            <Work />
+            <Experience />
+            <Certifications />
+          </main>
+          <Contact />
+        </div>
       </div>
-    </div>
+    </ContentProvider>
   );
 }

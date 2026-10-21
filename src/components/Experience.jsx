@@ -11,7 +11,7 @@ const entries = [
     id: e.id,
     kind: "Internship",
     title: e.role,
-    org: e.company,
+    org: [e.company, e.location].filter(Boolean).join(" · "),
     period: e.period,
     summary: e.description,
     points: e.highlights,

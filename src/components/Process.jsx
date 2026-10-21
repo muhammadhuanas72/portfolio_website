@@ -4,7 +4,8 @@ import { gsap, useGsap, scrollToId, DESKTOP, MOBILE } from "../lib/motion";
 import { Corners } from "./ui";
 
 const { passions } = portfolioData.about;
-const { projects } = portfolioData;
+// The wireframe flags the three shipped web builds.
+const projects = portfolioData.projects.filter((p) => p.category === "web").slice(0, 3);
 
 const captions = [
   { title: passions[0].title, text: passions[0].description, hint: "Scroll to continue" },

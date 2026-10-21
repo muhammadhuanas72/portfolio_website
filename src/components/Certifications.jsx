@@ -77,7 +77,9 @@ export default function Certifications() {
                         <p className="label text-mute">
                           {[c.issuer, c.date].filter(Boolean).join(" · ")}
                         </p>
-                        <p className="mt-2 max-w-[56ch] text-[14px] leading-snug text-ink-2">{c.description}</p>
+                        {c.description && (
+                          <p className="mt-2 max-w-[56ch] text-[14px] leading-snug text-ink-2">{c.description}</p>
+                        )}
                       </div>
                     </div>
                   </div>

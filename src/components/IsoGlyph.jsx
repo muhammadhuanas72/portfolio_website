@@ -67,6 +67,15 @@ const glyphs = {
       </g>
     </>
   ),
+  // Bar chart standing on a plate: data and BI
+  bars: (
+    <>
+      <Box o={[-34, -30, -24]} w={68} h={4} d={48} />
+      <Box o={[-26, -26, -8]} w={14} h={22} d={14} hidden={false} />
+      <Box o={[-6, -26, -8]} w={14} h={40} d={14} hidden={false} />
+      <Box o={[14, -26, -8]} w={14} h={30} d={14} hidden={false} />
+    </>
+  ),
   // Cube with a tool head on top
   kit: (
     <>

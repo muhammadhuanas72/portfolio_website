@@ -2,10 +2,10 @@ import { useRef } from "react";
 import { portfolioData } from "../data/portfolioData";
 import { gsap, useGsap, scrollToId, MOTION_OK } from "../lib/motion";
 import IsoGlyph from "./IsoGlyph";
-import { Btn } from "./ui";
+import { useContent } from "../lib/contentContext";
+import { Btn, ResumeMenu } from "./ui";
 
-const { name, introduction, socials, resumeUrl } = portfolioData.personalInfo;
-const { projects } = portfolioData;
+const { name, introduction, socials } = portfolioData.personalInfo;
 
 const sections = [
   { name: "Work", id: "work" },
@@ -27,6 +27,7 @@ const ext = { target: "_blank", rel: "noopener noreferrer" };
 
 export default function Contact() {
   const root = useRef(null);
+  const { projects, resumes } = useContent();
 
   useGsap(root, (add) => {
     add(MOTION_OK, () => {
@@ -54,7 +55,7 @@ export default function Contact() {
             something together
           </h2>
           <p className="mt-4 max-w-[46ch] text-[14px] leading-snug text-ink-2">
-            Open to frontend and Java developer roles. Write to me at{" "}
+            Open to frontend, Java developer and data analyst roles. Write to me at{" "}
             <a href={`mailto:${socials.email}`} className="underline decoration-line underline-offset-4 hover:underline underline-offset-4">
               {socials.email}
             </a>
@@ -64,9 +65,7 @@ export default function Contact() {
             <Btn href={`mailto:${socials.email}`} signal>
               Email me
             </Btn>
-            <Btn href={resumeUrl} download="Muhammadhu_Anas_Resume.pdf">
-              Resume
-            </Btn>
+            <ResumeMenu label="Resumes" up align="right" />
           </div>
         </div>
         <div className="label hidden border-l border-line p-3 text-right text-mute md:block">[1440,900]</div>
@@ -96,7 +95,7 @@ export default function Contact() {
             ))}
           </Col>
           <Col title="Live projects">
-            {projects.map((p) => (
+            {projects.filter((p) => p.demoUrl).map((p) => (
               <li key={p.id}>
                 <a href={p.demoUrl} {...ext} className="hover:underline underline-offset-4">
                   {p.title}
@@ -128,11 +127,13 @@ export default function Contact() {
                 LinkedIn
               </a>
             </li>
-            <li>
-              <a href={resumeUrl} download="Muhammadhu_Anas_Resume.pdf" className="hover:underline underline-offset-4">
-                Resume (PDF)
-              </a>
-            </li>
+            {resumes.map((r) => (
+              <li key={r.slug}>
+                <a href={r.url} target="_blank" rel="noopener noreferrer" download className="hover:underline underline-offset-4">
+                  Resume — {r.label}
+                </a>
+              </li>
+            ))}
           </Col>
         </div>
       </div>

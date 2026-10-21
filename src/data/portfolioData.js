@@ -3,31 +3,39 @@ export const portfolioData = {
     name: "Muhammadhu Anas M",
     titles: [
       "Frontend Web Developer",
-      "Web Developer",
+      "Data Analyst",
       "UI/UX Enthusiast"
     ],
     introduction: "I build modern, responsive, and user-focused web applications while leveraging AI to accelerate development, improve productivity, and create innovative digital experiences.",
     avatar: "/media/hero-photo.webp",
-    resumeUrl: "/Muhammadhu_Anas_Resume.pdf",
+    // Default resumes. The owner can replace these from /admin.html once Supabase is configured.
+    resumes: [
+      { slug: "software-dev", label: "Software Developer", url: "/resume/Anas_resume_software_dev.pdf" },
+      { slug: "data-analyst", label: "Data Analyst", url: "/resume/Anas_resume_data_analyst.pdf" }
+    ],
     socials: {
       email: "muhammadhuanas72@gmail.com",
-      phone: "+91 98949 37405", // Placeholder numbers/details which user can edit
+      phone: "+91 98949 37405",
       linkedin: "https://www.linkedin.com/in/muhammadhu-anas-972a80339",
       github: "https://github.com/muhammadhuanas72",
-      location: "Tamil Nadu, India"
+      location: "Chennai, Tamil Nadu"
     }
   },
   
   about: {
     summary: "A passionate developer combining modern frontend technologies with efficient development workflows to build highly performant, visually stunning, and user-friendly web solutions. I love bridging the gap between design and clean code, always striving for pixel-perfect implementation and premium interactive experiences.",
+    analystSummary: "Computer Science Engineering student with practical expertise in SQL, Python, Power BI, and Advanced Excel. Experienced in relational database querying, data modeling, and performance reporting developed through technical internships, academic projects, and industry job simulations. Adept at building interactive dashboards, standardizing unstructured datasets, and translating transactional data into actionable business intelligence.",
     careerObjective: "To secure a challenging role as a Frontend / Java Developer, leveraging my technical skills in modern web development, programming languages, and advanced productivity tools to deliver high-quality software solutions and drive business growth.",
     timeline: [
       {
         id: "edu-1",
-        year: "2022 - 2026",
+        year: "Sep 2022 – May 2026",
         title: "B.Tech CSE",
+        degree: "B.Tech Computer Science Engineering",
+        cgpa: "7.71",
         institution: "B.S. Abdur Rahman Crescent Institute of Science and Technology",
-        description: "Specialized in web development and core programming, building strong foundations in software engineering, frontend stacks, and database systems."
+        location: "Chennai, India",
+        description: "Specialized in web development and core programming, building strong foundations in software engineering, frontend stacks, and database systems. CGPA 7.71."
       },
       {
         id: "edu-2",
@@ -69,7 +77,27 @@ export const portfolioData = {
           "JavaScript",
           "Bootstrap",
           "Tailwind CSS",
-          "Responsive Design"
+          "Responsive Design",
+          "Wireframing",
+          "Prototyping"
+        ]
+      },
+      {
+        id: "data",
+        title: "Data Analysis & BI",
+        description: "Querying, modeling, and turning transactional data into dashboards and decisions.",
+        items: [
+          "SQL (MySQL)",
+          "Joins, Subqueries, CTEs",
+          "Relational Design (3NF)",
+          "Power BI",
+          "Power Query",
+          "DAX Measures",
+          "Star Schema",
+          "Excel (Pivot Tables, XLOOKUP)",
+          "Data Cleaning",
+          "Pandas",
+          "NumPy"
         ]
       },
       {
@@ -80,8 +108,12 @@ export const portfolioData = {
           "Java",
           "Python",
           "SQL",
+          "JavaScript",
           "C",
-          "C++"
+          "C++",
+          "DBMS",
+          "Data Structures",
+          "OOP"
         ]
       },
       {
@@ -108,7 +140,9 @@ export const portfolioData = {
           "GitHub",
           "VS Code",
           "Android Studio",
-          "Figma"
+          "Figma",
+          "Jupyter Notebook",
+          "MySQL Workbench"
         ]
       }
     ]
@@ -120,12 +154,13 @@ export const portfolioData = {
       role: "Web Development Intern",
       company: "Cognifyz Technologies",
       period: "Nov 2024 – Dec 2024",
+      location: "Remote",
       description: "Focused on designing, developing, and deploying modern web user interfaces using frontend tech stacks.",
       highlights: [
-        "Developed fully responsive websites and user interfaces to match design mockups.",
-        "Built reusable React-like components to maintain clean and scalable code architectures.",
-        "Optimized website load times and asset loading to improve overall lighthouse audit scores.",
-        "Collaborated on designing aesthetic layouts focused on premium UX standards."
+        "Developed responsive websites using HTML, CSS, and JavaScript.",
+        "Built interactive UI components and improved website usability and performance.",
+        "Developed interactive front-end components and data-driven dashboards using JavaScript, HTML5, and CSS3.",
+        "Integrated front-end forms with backend data endpoints, ensuring seamless data capture and input validation."
       ]
     },
     {
@@ -133,12 +168,13 @@ export const portfolioData = {
       role: "Java Development Intern",
       company: "Cognifyz Technologies",
       period: "Jul 2025 – Aug 2025",
+      location: "Remote",
       description: "Focused on core programming, object-oriented application design, and database interaction.",
       highlights: [
-        "Developed standalone Java applications leveraging robust OOP principles.",
-        "Worked with SQL databases, writing complex queries, triggers, and schema migrations.",
-        "Designed and built RESTful web APIs to connect application frontends to backing stores.",
-        "Optimized application logic and performance of database transaction layers."
+        "Developed Java-based application functionalities and worked with SQL databases.",
+        "Engineered and tested SQL queries across relational database tables to support backend application data flow.",
+        "Developed and validated REST APIs for structured JSON retrieval, ensuring reliable data extraction and integrity.",
+        "Analyzed query performance bottlenecks and optimized indexing strategies to enhance data retrieval speeds."
       ]
     }
   ],
@@ -146,6 +182,8 @@ export const portfolioData = {
   projects: [
     {
       id: "proj-1",
+      category: "web",
+      year: "2025",
       title: "Portable Fitness Studio",
       subtitle: "Fullstack Booking Platform",
       image: "/work/portable_fitness.webp",
@@ -166,6 +204,8 @@ export const portfolioData = {
     },
     {
       id: "proj-2",
+      category: "web",
+      year: "2025",
       title: "Auto Spare Parts E-Commerce",
       subtitle: "E-Commerce Frontend Website",
       image: "/work/spare_parts.webp",
@@ -186,6 +226,8 @@ export const portfolioData = {
     },
     {
       id: "proj-3",
+      category: "web",
+      year: "2025",
       title: "Object Detection System",
       subtitle: "Computer Vision Web App",
       image: "/work/object_detection.webp",
@@ -203,6 +245,42 @@ export const portfolioData = {
         "Ensuring identical dev and production runtime environments: Built a lightweight Dockerfile and configured dependencies in requirements.txt."
       ],
       details: "A computer vision application integrating a Flask web server and OpenCV object detection engine. Fully containerized using Docker and configured for deployment via Gunicorn and Procfiles."
+    },
+    {
+      id: "proj-4",
+      category: "data",
+      year: "2026",
+      title: "Student Enrollment & Course Analytics Dashboard",
+      subtitle: "Power BI Dashboard",
+      tech: ["Power BI", "Power Query", "DAX"],
+      features: [
+        "Ingested and modeled 200+ student enrollments using Power Query and custom DAX measures.",
+        "Built interactive dashboards with KPI gauges, donut charts, and dynamic demographic slicers."
+      ]
+    },
+    {
+      id: "proj-5",
+      category: "data",
+      year: "2026",
+      title: "Sales Performance Dashboard",
+      subtitle: "Excel Dashboard",
+      tech: ["Advanced Excel", "Pivot Tables", "Power Query"],
+      features: [
+        "Processed 100+ multi-region sales transactions to evaluate cost, revenue, and product profit margins.",
+        "Built an executive Excel dashboard using multi-dimensional Pivot Tables and interactive slicers."
+      ]
+    },
+    {
+      id: "proj-6",
+      category: "data",
+      year: "2025",
+      title: "Fitness Studio Database System",
+      subtitle: "Relational Database",
+      tech: ["SQL", "MySQL", "Python"],
+      features: [
+        "Architected a 3NF relational schema in MySQL to manage fitness bookings and member records.",
+        "Authored optimized SQL queries using multi-table JOINs and aggregations to analyze utilization trends."
+      ]
     }
   ],
 
@@ -232,7 +310,7 @@ export const portfolioData = {
     {
       id: "cert-1",
       title: "Data Analytics Virtual Experience",
-      issuer: "Deloitte",
+      issuer: "Deloitte · Forage",
       date: "2024",
       link: "#",
       description: "Gained insights into data analysis methodologies, dashboard design, and translating analytical findings into strategic recommendations."
@@ -240,7 +318,7 @@ export const portfolioData = {
     {
       id: "cert-2",
       title: "Data Analysis and Visualisation",
-      issuer: "Deloitte / Forage",
+      issuer: "Deloitte · Forage",
       date: "2024",
       link: "#",
       description: "Focused on cleaning complex datasets, building interactive data dashboards, and presenting insights to executive stakeholders."
@@ -248,7 +326,7 @@ export const portfolioData = {
     {
       id: "cert-3",
       title: "Data Visualization Virtual Internship",
-      issuer: "Tata / Forage",
+      issuer: "Tata · Forage",
       date: "2024",
       link: "#",
       description: "Learned key principles of visual story-telling, data dashboard layouts, and configuring intuitive charts for business intelligence."
@@ -256,7 +334,7 @@ export const portfolioData = {
     {
       id: "cert-4",
       title: "Ignite India Certification",
-      issuer: "Ignite India Program",
+      issuer: "Wadhwani",
       date: "2023",
       link: "#",
       description: "Recognized for problem-solving, collaborative product engineering, and prototyping innovative technology concepts."
@@ -264,10 +342,26 @@ export const portfolioData = {
     {
       id: "cert-5",
       title: "Object Detection & Computer Vision",
-      issuer: null,
+      issuer: "Cognitive Class",
       date: "2023",
       link: "#",
       description: "Mastered fundamental OpenCV techniques, image processing filters, convolutional networks, and live feed object boundary mapping."
+    },
+    {
+      id: "cert-6",
+      title: "30 Days Power BI Micro Course",
+      issuer: "SkillCourse",
+      date: null,
+      link: "#",
+      description: null
+    },
+    {
+      id: "cert-7",
+      title: "Deloitte Technology Simulation",
+      issuer: "Forage",
+      date: null,
+      link: "#",
+      description: null
     }
   ],
 

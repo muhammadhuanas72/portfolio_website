@@ -194,6 +194,70 @@ img {
   box-shadow: 0 0 0 1px var(--color-line);
 }
 
+/* ---------- Drafting cursor (fine pointers only) ---------- */
+html.has-cursor,
+html.has-cursor * {
+  cursor: none !important;
+}
+html.has-cursor :is(input, textarea) {
+  cursor: text !important;
+}
+.cursor-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+html.cursor-in .cursor-layer {
+  opacity: 1;
+}
+.cursor-plus,
+.cursor-tag {
+  position: fixed;
+  left: 0;
+  top: 0;
+  will-change: transform;
+}
+.cursor-plus > span {
+  position: absolute;
+  left: -7px;
+  top: -0.5px;
+  width: 14px;
+  height: 1px;
+  background: var(--color-ink);
+  transition: transform 0.35s var(--ease-out-expo), background-color 0.2s;
+}
+.cursor-plus > span + span {
+  transform: rotate(90deg);
+}
+.cursor-plus.is-link > span {
+  transform: rotate(45deg) scale(1.35);
+}
+.cursor-plus.is-link > span + span {
+  transform: rotate(135deg) scale(1.35);
+}
+.cursor-plus.is-down > span {
+  background: var(--color-mute);
+}
+.cursor-tag {
+  max-width: 190px;
+  padding: 5px 7px;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-size: 9.5px;
+  line-height: 1.3;
+  opacity: 0;
+  scale: 0.9;
+  transform-origin: 0 0;
+  transition: opacity 0.25s, scale 0.35s var(--ease-out-expo);
+}
+.cursor-tag.is-on {
+  opacity: 1;
+  scale: 1;
+}
+
 /* Marquee */
 @keyframes marquee {
   to {
@@ -230,4 +294,14 @@ html.lenis body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Hero crosshair: visible only while a mouse is over the sheet */
+.crosshair {
+  opacity: 0;
+  transition: opacity 0.3s;
+  will-change: transform;
+}
+.crosshair-on .crosshair {
+  opacity: 1;
 }

@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { portfolioData } from "../data/portfolioData";
 import { gsap, useGsap, scrollToId, MOTION_OK, DESKTOP } from "../lib/motion";
-import { Btn, Corners, Ruler, Words } from "./ui";
+import { Btn, Corners, ResumeMenu, Ruler, Words } from "./ui";
 import { BOOT_DELAY } from "../lib/boot";
 
-const { name, titles, socials, avatar, resumeUrl } = portfolioData.personalInfo;
-const { summary } = portfolioData.about;
+const { name, titles, socials, avatar } = portfolioData.personalInfo;
+const { summary, analystSummary } = portfolioData.about;
 const education = portfolioData.about.timeline[0];
 const internships = portfolioData.experience;
 const latest = internships[internships.length - 1];
@@ -13,9 +13,9 @@ const skill = (id) => portfolioData.skills.categories.find((c) => c.id === id).i
 
 const facts = [
   { k: "Based in", v: socials.location },
-  { k: "Studying", v: `${education.title} · ${education.year}` },
+  { k: "Studying", v: `${education.title} · CGPA ${education.cgpa} · ${education.year}` },
   { k: "Experience", v: `${internships.length} internships · ${latest.company}` },
-  { k: "Works with", v: [...skill("frontend").slice(0, 3), ...skill("programming").slice(0, 2)].join(" · ") },
+  { k: "Works with", v: ["HTML5", "JavaScript", ...skill("data").filter((x) => ["SQL (MySQL)", "Power BI"].includes(x)), "Python"].join(" · ") },
 ];
 
 // Callouts pinned to the photo (positions are % of the photo box). `open` places the
@@ -30,19 +30,97 @@ export default function Hero() {
   const root = useRef(null);
   const stage = useRef(null);
   const coords = useRef(null);
+  const figure = useRef(null);
+  const sharp = useRef(null);
+  const sel = useRef(null);
+  const lineH = useRef(null);
+  const lineV = useRef(null);
   const [active, setActive] = useState(null);
 
-  // Live cursor coordinates in the corner of the sheet, like a drafting app's readout.
+  // Drafting interaction: crosshair lines and a coordinate readout follow the mouse across the
+  // sheet; dragging over the photo draws a selection that brings the background into focus.
+  // On touch, tapping the photo toggles focus for the whole frame.
   useEffect(() => {
-    const el = stage.current;
-    if (!el) return;
+    const st = stage.current;
+    const fig = figure.current;
+    const focus = sharp.current;
+    const box = sel.current;
+    if (!st || !fig || !focus || !box) return;
+
     const px = (v) => String(Math.max(0, Math.round(v))).padStart(4, "0");
-    const move = (e) => {
-      const r = el.getBoundingClientRect();
-      if (coords.current) coords.current.textContent = `X:${px(e.clientX - r.left)}PX  Y:${px(e.clientY - r.top)}PX`;
+    const clamp = (v, max) => Math.min(Math.max(v, 0), max);
+    let start = null;
+    let shown = false;
+
+    const hide = () => {
+      focus.style.transition = "opacity 0.5s";
+      focus.style.opacity = "0";
+      box.style.opacity = "0";
+      shown = false;
     };
-    el.addEventListener("pointermove", move);
-    return () => el.removeEventListener("pointermove", move);
+    const select = (e) => {
+      const f = fig.getBoundingClientRect();
+      const x = clamp(e.clientX - f.left, f.width);
+      const y = clamp(e.clientY - f.top, f.height);
+      const l = Math.min(start.x, x);
+      const r = Math.max(start.x, x);
+      const t = Math.min(start.y, y);
+      const b = Math.max(start.y, y);
+      focus.style.clipPath = `inset(${t}px ${f.width - r}px ${f.height - b}px ${l}px)`;
+      Object.assign(box.style, { left: `${l}px`, top: `${t}px`, width: `${r - l}px`, height: `${b - t}px`, opacity: "1" });
+      box.firstChild.textContent = `${Math.round(r - l)} × ${Math.round(b - t)} PX`;
+    };
+
+    const move = (e) => {
+      const s = st.getBoundingClientRect();
+      const x = e.clientX - s.left;
+      const y = e.clientY - s.top;
+      if (coords.current) coords.current.textContent = `X:${px(x)}PX  Y:${px(y)}PX`;
+      if (e.pointerType === "mouse") {
+        lineH.current.style.transform = `translate3d(0, ${y}px, 0)`;
+        lineV.current.style.transform = `translate3d(${x}px, 0, 0)`;
+        st.classList.add("crosshair-on");
+      }
+      if (start) select(e);
+    };
+    const leave = () => {
+      st.classList.remove("crosshair-on");
+      if (!start && shown) hide();
+    };
+    const down = (e) => {
+      if (e.button !== 0 || e.target.closest("[data-marker]")) return;
+      if (e.pointerType !== "mouse") {
+        if (shown) return hide();
+        focus.style.transition = "opacity 0.5s, clip-path 0.6s cubic-bezier(0.16, 1, 0.3, 1)";
+        focus.style.clipPath = "inset(0px 0px 0px 0px)";
+        focus.style.opacity = "1";
+        shown = true;
+        return;
+      }
+      const f = fig.getBoundingClientRect();
+      start = { x: e.clientX - f.left, y: e.clientY - f.top };
+      fig.setPointerCapture(e.pointerId);
+      focus.style.transition = "none";
+      focus.style.opacity = "1";
+      shown = true;
+      select(e);
+    };
+    const up = () => {
+      start = null;
+    };
+
+    st.addEventListener("pointermove", move);
+    st.addEventListener("pointerleave", leave);
+    fig.addEventListener("pointerdown", down);
+    fig.addEventListener("pointerup", up);
+    fig.addEventListener("pointercancel", up);
+    return () => {
+      st.removeEventListener("pointermove", move);
+      st.removeEventListener("pointerleave", leave);
+      fig.removeEventListener("pointerdown", down);
+      fig.removeEventListener("pointerup", up);
+      fig.removeEventListener("pointercancel", up);
+    };
   }, []);
 
   useGsap(root, (add) => {
@@ -78,6 +156,8 @@ export default function Hero() {
         <div aria-hidden="true" className="ruler-v absolute inset-y-6 left-2" />
         <div aria-hidden="true" className="ruler-v absolute inset-y-6 right-2 rotate-180" />
         <div aria-hidden="true" className="dash-x absolute inset-x-6 top-1/2 hidden h-px opacity-70 md:block" />
+        <div ref={lineH} aria-hidden="true" className="crosshair pointer-events-none absolute left-0 top-0 z-20 h-px w-full bg-ink/20" />
+        <div ref={lineV} aria-hidden="true" className="crosshair pointer-events-none absolute left-0 top-0 z-20 h-full w-px bg-ink/20" />
 
         {/* Who am I */}
         <div className="relative z-10 order-2 flex flex-col justify-center px-5 pb-12 pt-8 md:order-1 md:col-span-6 md:py-12 md:pl-12 md:pr-10 lg:pl-16">
@@ -89,7 +169,10 @@ export default function Hero() {
             <Words text={name} mask />
           </h1>
           <p data-meta className="label mt-4 text-mute">{titles.join(" / ")}</p>
-          <p data-meta className="mt-6 max-w-[52ch] text-[15px] leading-snug text-ink-2 md:text-[16px]">{summary}</p>
+          <div data-meta className="mt-6 max-w-[54ch] space-y-3 text-[15px] leading-snug text-ink-2 md:text-[16px]">
+            <p>{summary.split(". ")[0]}.</p>
+            <p>{analystSummary.split(". ").slice(0, 2).join(". ")}.</p>
+          </div>
 
           <dl data-meta className="mt-7 max-w-[560px] border-t border-line">
             {facts.map((f) => (
@@ -104,9 +187,7 @@ export default function Hero() {
             <Btn signal onClick={() => scrollToId("work")}>
               View my work
             </Btn>
-            <Btn href={resumeUrl} download="Muhammadhu_Anas_Resume.pdf">
-              Resume
-            </Btn>
+            <ResumeMenu label="Resumes" up />
           </div>
         </div>
 
@@ -120,7 +201,11 @@ export default function Hero() {
           />
 
           <div data-figure-wrap className="absolute inset-x-0 bottom-[8%] top-[9%] flex justify-center md:top-[8%]">
-            <figure className="relative h-full max-w-[86%] aspect-[1024/1280]">
+            <figure
+              ref={figure}
+              data-cursor="Click and drag to bring the background into focus"
+              className="relative h-full max-w-[86%] aspect-[1024/1280] touch-pan-y"
+            >
               <figcaption className="label absolute -top-5 left-0 text-mute">Fig. 01 — {name}</figcaption>
 
               <div data-print className="absolute inset-0 overflow-hidden border border-ink bg-paper-2 shadow-[10px_10px_0_0_var(--color-line)]">
@@ -133,6 +218,23 @@ export default function Hero() {
                   className="h-full w-full object-cover"
                   draggable="false"
                 />
+                <img
+                  ref={sharp}
+                  src="/media/hero-photo-sharp.webp"
+                  alt=""
+                  aria-hidden="true"
+                  decoding="async"
+                  className="absolute inset-0 h-full w-full object-cover"
+                  style={{ opacity: 0, clipPath: "inset(50% 50% 50% 50%)" }}
+                  draggable="false"
+                />
+                <div
+                  ref={sel}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute border border-ink opacity-0 transition-opacity duration-300"
+                >
+                  <span className="label absolute left-1 top-1 whitespace-nowrap bg-ink px-1.5 py-0.5 text-[9px] text-paper" />
+                </div>
               </div>
 
               {markers.map((m, i) => (
@@ -162,7 +264,10 @@ export default function Hero() {
             </figure>
           </div>
 
-          <p className="label absolute bottom-3 left-6 text-mute md:bottom-5">[ Hover or tap a marker ]</p>
+          <p className="label absolute bottom-3 left-6 text-mute md:bottom-5">
+            <span className="pointer-coarse:hidden">[ Click and drag on the photo · hover a marker ]</span>
+            <span className="hidden pointer-coarse:inline">[ Tap the photo to focus · tap a marker ]</span>
+          </p>
           <p ref={coords} aria-hidden="true" className="label absolute bottom-5 right-6 hidden text-mute md:block">
             X:0000PX  Y:0000PX
           </p>

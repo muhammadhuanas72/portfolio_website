@@ -5,7 +5,7 @@ import IsoGlyph from "./IsoGlyph";
 import { Eyebrow, Plus } from "./ui";
 
 const { categories } = portfolioData.skills;
-const glyphFor = { frontend: "layers", programming: "shaft", "ai-dev": "orb", tools: "kit" };
+const glyphFor = { frontend: "layers", data: "bars", programming: "shaft", "ai-dev": "orb", tools: "kit" };
 
 export default function Capabilities() {
   const root = useRef(null);
@@ -54,7 +54,7 @@ export default function Capabilities() {
         </p>
       </div>
 
-      <div data-cols className="grid border-t border-line sm:grid-cols-2 lg:grid-cols-4">
+      <div data-cols className="grid border-t border-line sm:grid-cols-2 lg:grid-cols-5">
         {categories.map((c, i) => (
           <article key={c.id} data-col className="flex flex-col border-b border-line sm:[&:nth-child(odd)]:border-r lg:border-b-0 lg:border-r lg:last:border-r-0">
             <header className="label flex justify-between border-b border-line px-4 py-3">
@@ -74,7 +74,7 @@ export default function Capabilities() {
             </div>
 
             <div className="flex flex-1 flex-col gap-4 px-4 pb-6 pt-5">
-              <h3 className="display text-[22px] leading-[1]">{c.title}</h3>
+              <h3 className="display text-[clamp(18px,1.5vw,22px)] leading-[1]">{c.title}</h3>
               <p className="text-[13px] leading-snug text-ink-2">{c.description}</p>
               <ul className="mt-auto flex flex-wrap gap-1.5 pt-2">
                 {c.items.map((it) => (

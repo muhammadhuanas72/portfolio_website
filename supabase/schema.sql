@@ -1,0 +1,83 @@
+-- Portfolio content editable only by the owner.
+-- Run once in the Supabase SQL editor. Re-running is safe.
+-- Everyone can read; only the owner's signed-in account can write.
+
+-- ---------------------------------------------------------------- owner check
+create or replace function public.is_portfolio_owner()
+returns boolean
+language sql
+stable
+as $$
+  select coalesce(lower(auth.jwt() ->> 'email') = 'muhammadhuanas72@gmail.com', false)
+$$;
+
+-- ---------------------------------------------------------------- tables
+create table if not exists public.projects (
+  id          uuid primary key default gen_random_uuid(),
+  created_at  timestamptz not null default now(),
+  sort        integer not null default 0,
+  category    text not null default 'web' check (category in ('web', 'data')),
+  year        text,
+  title       text not null check (char_length(title) between 1 and 120),
+  subtitle    text,
+  details     text,
+  features    text[] not null default '{}',
+  tech        text[] not null default '{}',
+  demo_url    text check (demo_url is null or demo_url ~* '^https?://'),
+  github_url  text check (github_url is null or github_url ~* '^https?://'),
+  image_path  text
+);
+
+create table if not exists public.resumes (
+  slug        text primary key check (slug in ('software-dev', 'data-analyst')),
+  label       text not null,
+  path        text not null,
+  updated_at  timestamptz not null default now()
+);
+
+alter table public.projects enable row level security;
+alter table public.resumes  enable row level security;
+
+drop policy if exists "projects are public"      on public.projects;
+drop policy if exists "owner manages projects"   on public.projects;
+drop policy if exists "resumes are public"       on public.resumes;
+drop policy if exists "owner manages resumes"    on public.resumes;
+
+create policy "projects are public" on public.projects
+  for select using (true);
+create policy "owner manages projects" on public.projects
+  for all to authenticated
+  using (public.is_portfolio_owner())
+  with check (public.is_portfolio_owner());
+
+create policy "resumes are public" on public.resumes
+  for select using (true);
+create policy "owner manages resumes" on public.resumes
+  for all to authenticated
+  using (public.is_portfolio_owner())
+  with check (public.is_portfolio_owner());
+
+-- ---------------------------------------------------------------- storage
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values
+  ('resumes',        'resumes',        true, 5242880, array['application/pdf']),
+  ('project-images', 'project-images', true, 4194304, array['image/png', 'image/jpeg', 'image/webp'])
+on conflict (id) do update
+  set public = excluded.public,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "owner uploads portfolio files" on storage.objects;
+drop policy if exists "owner updates portfolio files" on storage.objects;
+drop policy if exists "owner deletes portfolio files" on storage.objects;
+
+create policy "owner uploads portfolio files" on storage.objects
+  for insert to authenticated
+  with check (bucket_id in ('resumes', 'project-images') and public.is_portfolio_owner());
+create policy "owner updates portfolio files" on storage.objects
+  for update to authenticated
+  using (bucket_id in ('resumes', 'project-images') and public.is_portfolio_owner());
+create policy "owner deletes portfolio files" on storage.objects
+  for delete to authenticated
+  using (bucket_id in ('resumes', 'project-images') and public.is_portfolio_owner());
+-- Public buckets serve files by URL, so no public select policy on storage.objects is needed.

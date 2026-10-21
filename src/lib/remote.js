@@ -1,0 +1,58 @@
+// Read-only access to owner-uploaded content in Supabase. The public site uses plain
+// fetch against the REST API (no SDK in the main bundle); writes happen only in /admin.html.
+
+export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+export const remoteEnabled = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+
+export const BUCKETS = { resumes: "resumes", images: "project-images" };
+
+export const publicUrl = (bucket, path) =>
+  path ? `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path.split("/").map(encodeURIComponent).join("/")}` : null;
+
+async function get(table, query) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}`, {
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+  });
+  if (!res.ok) throw new Error(`${table}: ${res.status}`);
+  return res.json();
+}
+
+// Database rows -> the shape used by portfolioData.js
+export const toProject = (row) => ({
+  id: row.id,
+  remote: true,
+  category: row.category,
+  year: row.year,
+  title: row.title,
+  subtitle: row.subtitle,
+  details: row.details,
+  features: row.features ?? [],
+  tech: row.tech ?? [],
+  demoUrl: row.demo_url || null,
+  githubUrl: row.github_url || null,
+  image: publicUrl(BUCKETS.images, row.image_path),
+  imagePath: row.image_path,
+});
+
+export const toResume = (row) => ({
+  slug: row.slug,
+  label: row.label,
+  url: publicUrl(BUCKETS.resumes, row.path),
+  path: row.path,
+  updatedAt: row.updated_at,
+});
+
+export async function fetchRemote() {
+  if (!remoteEnabled) return null;
+  try {
+    const [projects, resumes] = await Promise.all([
+      get("projects", "select=*&order=sort.asc,created_at.asc"),
+      get("resumes", "select=*"),
+    ]);
+    return { projects: projects.map(toProject), resumes: resumes.map(toResume) };
+  } catch (err) {
+    console.warn("Remote content unavailable, showing built-in content.", err);
+    return null;
+  }
+}
