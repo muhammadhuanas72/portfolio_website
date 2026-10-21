@@ -1,18 +1,15 @@
 import { useState } from "react";
 import { portfolioData } from "../data/portfolioData";
-import { Corners, Eyebrow } from "./ui";
+import { Eyebrow } from "./ui";
 
 const { certifications } = portfolioData;
 const { name } = portfolioData.personalInfo;
 
-// Soft edge so the drawing dissolves into the paper instead of ending in a hard rectangle.
+// Oval fade: the drawing dissolves into the paper with no straight edges, so it never
+// reads as a framed rectangle.
 const fade = {
-  maskImage:
-    "linear-gradient(to right, transparent, #000 10%, #000 90%, transparent), linear-gradient(to bottom, transparent, #000 6%, #000 92%, transparent)",
-  maskComposite: "intersect",
-  WebkitMaskImage:
-    "linear-gradient(to right, transparent, #000 10%, #000 90%, transparent), linear-gradient(to bottom, transparent, #000 6%, #000 92%, transparent)",
-  WebkitMaskComposite: "source-in",
+  maskImage: "radial-gradient(ellipse 58% 62% at 50% 48%, #000 62%, transparent 100%)",
+  WebkitMaskImage: "radial-gradient(ellipse 58% 62% at 50% 48%, #000 62%, transparent 100%)",
 };
 
 export default function Certifications() {
@@ -22,7 +19,7 @@ export default function Certifications() {
     <section id="certifications" className="border-b border-line">
       <div className="grid md:grid-cols-2">
         {/* Drawing, straight on the sheet like the hero: no frame, no animation */}
-        <div className="relative min-h-[420px] overflow-hidden border-b border-line md:min-h-[640px] md:border-b-0 md:border-r">
+        <div className="relative min-h-[420px] overflow-hidden md:min-h-[640px]">
           <img
             src="/media/learning.webp"
             alt={`Drawing of ${name} standing in a technical construction layout`}
@@ -33,7 +30,6 @@ export default function Certifications() {
             className="absolute inset-0 h-full w-full object-cover object-center"
             style={fade}
           />
-          <Corners />
           <p className="label absolute bottom-4 left-4 text-mute">[ {certifications.length} certifications ]</p>
         </div>
 
