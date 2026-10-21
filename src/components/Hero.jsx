@@ -21,9 +21,9 @@ const facts = [
 // Callouts pinned to the photo (positions are % of the photo box). `open` places the
 // callout so it never covers the face.
 const markers = [
-  { x: 55, y: 41, open: "left-3 bottom-3", code: "01", title: titles[0], note: titles.slice(1).join(" · ") },
-  { x: 52, y: 52, open: "right-3 top-3", code: "02", title: education.title, note: `${education.year} · Crescent Institute` },
-  { x: 58, y: 62, open: "left-3 top-3", code: "03", title: `${internships.length}× internships`, note: internships[0].company },
+  { x: 60, y: 14, open: "left-3 top-3", code: "01", title: titles[0], note: titles.slice(1).join(" · ") },
+  { x: 55, y: 29, open: "right-3 top-3", code: "02", title: education.title, note: `${education.year} · Crescent Institute` },
+  { x: 62, y: 45, open: "left-3 top-3", code: "03", title: `${internships.length}× internships`, note: internships[0].company },
 ];
 
 export default function Hero() {

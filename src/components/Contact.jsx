@@ -55,7 +55,7 @@ export default function Contact() {
           </h2>
           <p className="mt-4 max-w-[46ch] text-[14px] leading-snug text-ink-2">
             Open to frontend and Java developer roles. Write to me at{" "}
-            <a href={`mailto:${socials.email}`} className="underline decoration-line underline-offset-4 hover:text-signal">
+            <a href={`mailto:${socials.email}`} className="underline decoration-line underline-offset-4 hover:underline underline-offset-4">
               {socials.email}
             </a>
             .
@@ -88,7 +88,7 @@ export default function Contact() {
                     e.preventDefault();
                     scrollToId(s.id);
                   }}
-                  className="hover:text-signal"
+                  className="hover:underline underline-offset-4"
                 >
                   {s.name}
                 </a>
@@ -98,7 +98,7 @@ export default function Contact() {
           <Col title="Live projects">
             {projects.map((p) => (
               <li key={p.id}>
-                <a href={p.demoUrl} {...ext} className="hover:text-signal">
+                <a href={p.demoUrl} {...ext} className="hover:underline underline-offset-4">
                   {p.title}
                 </a>
               </li>
@@ -106,12 +106,12 @@ export default function Contact() {
           </Col>
           <Col title="Contact">
             <li>
-              <a href={`mailto:${socials.email}`} className="break-all text-signal hover:underline">
+              <a href={`mailto:${socials.email}`} className="break-all text-ink underline-offset-4 hover:underline">
                 {socials.email}
               </a>
             </li>
             <li>
-              <a href={`tel:${socials.phone.replace(/\s/g, "")}`} className="hover:text-signal">
+              <a href={`tel:${socials.phone.replace(/\s/g, "")}`} className="hover:underline underline-offset-4">
                 {socials.phone}
               </a>
             </li>
@@ -119,17 +119,17 @@ export default function Contact() {
           </Col>
           <Col title="Social">
             <li>
-              <a href={socials.github} {...ext} className="hover:text-signal">
+              <a href={socials.github} {...ext} className="hover:underline underline-offset-4">
                 GitHub
               </a>
             </li>
             <li>
-              <a href={socials.linkedin} {...ext} className="hover:text-signal">
+              <a href={socials.linkedin} {...ext} className="hover:underline underline-offset-4">
                 LinkedIn
               </a>
             </li>
             <li>
-              <a href={resumeUrl} download="Muhammadhu_Anas_Resume.pdf" className="hover:text-signal">
+              <a href={resumeUrl} download="Muhammadhu_Anas_Resume.pdf" className="hover:underline underline-offset-4">
                 Resume (PDF)
               </a>
             </li>

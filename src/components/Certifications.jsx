@@ -24,8 +24,8 @@ export default function Certifications() {
         {/* Composition */}
         <div className="relative min-h-[380px] overflow-hidden border-b border-line bg-paper-2 md:min-h-[640px] md:border-b-0 md:border-r">
           <Corners />
-          <div data-disc aria-hidden="true" className="absolute left-[8%] top-[18%] aspect-square w-[42%] rounded-full bg-signal" />
-          <div data-slab aria-hidden="true" className="absolute right-[16%] top-0 h-[70%] w-[16%] bg-signal/85" />
+          <div data-disc aria-hidden="true" className="absolute left-[8%] top-[18%] aspect-square w-[42%] hatch rounded-full" />
+          <div data-slab aria-hidden="true" className="absolute right-[16%] top-0 h-[70%] w-[16%] hatch-dense" />
           <div aria-hidden="true" className="absolute inset-x-0 bottom-[14%] h-px bg-ink" />
           <img
             data-figure
