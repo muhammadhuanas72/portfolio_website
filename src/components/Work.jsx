@@ -1,69 +1,16 @@
-import { useRef } from "react";
 import { useContent } from "../lib/contentContext";
-import { gsap, ScrollTrigger, useGsap, MOTION_OK, DESKTOP, MOBILE } from "../lib/motion";
 import IsoGlyph from "./IsoGlyph";
-import RenderReveal from "./RenderReveal";
 import { Btn, Corners, Eyebrow, Plus } from "./ui";
 
 const host = (url) => url.replace(/^https?:\/\//, "").replace(/\/$/, "");
 
 export default function Work() {
-  const root = useRef(null);
   const { projects } = useContent();
   const web = projects.filter((p) => p.category !== "data");
   const data = projects.filter((p) => p.category === "data");
 
-  useGsap(
-    root,
-    (add) => {
-      // Screenshots are unveiled top-down as they scroll in, like a print sliding out of a plotter.
-      add(MOTION_OK, () => {
-        gsap.utils.toArray("[data-reveal]").forEach((el) => {
-          gsap.fromTo(
-            el,
-            { clipPath: "inset(0% 0% 100% 0%)" },
-            {
-              clipPath: "inset(0% 0% 0% 0%)",
-              ease: "none",
-              scrollTrigger: { trigger: el, start: "top 88%", end: "top 38%", scrub: 0.6 },
-            }
-          );
-        });
-        gsap.from("[data-dcell]", {
-          opacity: 0,
-          y: 24,
-          duration: 0.9,
-          ease: "expo.out",
-          stagger: 0.08,
-          scrollTrigger: { trigger: "[data-dgrid]", start: "top 80%", toggleActions: "play none none reverse" },
-        });
-      });
-      add(DESKTOP, () => {
-        gsap.utils.toArray("[data-shot] img").forEach((img) => {
-          gsap.fromTo(
-            img,
-            { yPercent: -6, scale: 1.12 },
-            {
-              yPercent: 6,
-              scale: 1.12,
-              ease: "none",
-              scrollTrigger: { trigger: img.closest("[data-shot]"), start: "top bottom", end: "bottom top", scrub: true },
-            }
-          );
-        });
-      });
-      // No hover on touch screens: colour comes in while the screenshot is centred.
-      add(MOBILE, () => {
-        gsap.utils.toArray("[data-shot]").forEach((shot) => {
-          ScrollTrigger.create({ trigger: shot, start: "top 65%", end: "bottom 35%", toggleClass: "in-view" });
-        });
-      });
-    },
-    [projects]
-  );
-
   return (
-    <section id="work" ref={root} className="border-b border-line">
+    <section id="work" className="border-b border-line">
       <div className="grid gap-6 px-4 pb-10 pt-12 md:grid-cols-12 md:px-6 md:pt-16">
         <div className="md:col-span-8">
           <Eyebrow signal>Selected work</Eyebrow>
@@ -94,7 +41,7 @@ export default function Work() {
               </h3>
             </div>
           </div>
-          <div data-dgrid className="grid border-t border-line md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid border-t border-line md:grid-cols-2 lg:grid-cols-3">
             {data.map((p, i) => (
               <DataProject key={p.id} p={p} i={i} />
             ))}
@@ -166,7 +113,6 @@ function WebProject({ p, i }) {
       {/* Screenshot on a drafting sheet */}
       <Frame
         {...frameProps}
-        data-shot
         className={`group relative block min-h-[300px] overflow-hidden border-t border-line p-6 md:col-span-7 md:min-h-[560px] md:border-t-0 md:p-12 ${flip ? "md:order-1" : ""}`}
       >
         <Corners />
@@ -179,23 +125,13 @@ function WebProject({ p, i }) {
             <span className="h-2 w-2 rounded-full border border-mute" />
             <span className="ml-3 truncate">{p.demoUrl ? host(p.demoUrl) : p.title}</span>
           </div>
-          {p.image && p.lines ? (
-            <RenderReveal
-              lines={p.lines}
-              src={p.image}
-              alt={`Screenshot of ${p.title}`}
-              className="aspect-[16/9] w-full md:aspect-auto md:h-[calc(100%-33px)]"
-              imgClassName="object-cover object-top"
-              renderClassName="contrast-[1.05] grayscale transition-[filter] duration-700 ease-out-expo group-hover:grayscale-0 group-[.in-view]:grayscale-0"
-            />
-          ) : p.image ? (
+          {p.image ? (
             <img
-              data-reveal
               src={p.image}
               alt={`Screenshot of ${p.title}`}
               loading="lazy"
               decoding="async"
-              className="aspect-[16/9] w-full object-cover object-top contrast-[1.05] grayscale transition-[filter] duration-700 ease-out-expo group-hover:grayscale-0 group-[.in-view]:grayscale-0 md:aspect-auto md:h-[calc(100%-33px)]"
+              className="aspect-[16/9] w-full object-cover object-top md:aspect-auto md:h-[calc(100%-33px)]"
             />
           ) : (
             <div className="flex aspect-[16/9] items-center justify-center text-ink-2 md:aspect-auto md:h-[calc(100%-33px)]">
@@ -217,7 +153,7 @@ const dataGlyphs = ["bars", "orb", "shaft"];
 
 function DataProject({ p, i }) {
   return (
-    <article data-dcell className="flex flex-col border-b border-line md:[&:nth-child(odd)]:border-r lg:border-r lg:[&:nth-child(3n)]:border-r-0">
+    <article className="flex flex-col border-b border-line md:[&:nth-child(odd)]:border-r lg:border-r lg:[&:nth-child(3n)]:border-r-0">
       <header className="label flex justify-between border-b border-line px-4 py-3">
         <span>{p.subtitle}</span>
         <span className="text-mute">
@@ -230,7 +166,7 @@ function DataProject({ p, i }) {
         <Plus at="bl" />
         <Plus at="br" />
         {p.image ? (
-          <img data-reveal src={p.image} alt={`Preview of ${p.title}`} loading="lazy" className="h-full w-full object-cover grayscale" />
+          <img src={p.image} alt={`Preview of ${p.title}`} loading="lazy" className="h-full w-full object-cover" />
         ) : (
           <IsoGlyph name={dataGlyphs[i % dataGlyphs.length]} className="h-[62%] w-[62%]" />
         )}
