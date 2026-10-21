@@ -151,20 +151,6 @@ export const portfolioData = {
 
   experience: [
     {
-      id: "exp-1",
-      role: "Web Development Intern",
-      company: "Cognifyz Technologies",
-      period: "Nov 2024 – Dec 2024",
-      location: "Remote",
-      description: "Focused on designing, developing, and deploying modern web user interfaces using frontend tech stacks.",
-      highlights: [
-        "Developed responsive websites using HTML, CSS, and JavaScript.",
-        "Built interactive UI components and improved website usability and performance.",
-        "Developed interactive front-end components and data-driven dashboards using JavaScript, HTML5, and CSS3.",
-        "Integrated front-end forms with backend data endpoints, ensuring seamless data capture and input validation."
-      ]
-    },
-    {
       id: "exp-2",
       role: "Java Development Intern",
       company: "Cognifyz Technologies",
@@ -176,6 +162,20 @@ export const portfolioData = {
         "Engineered and tested SQL queries across relational database tables to support backend application data flow.",
         "Developed and validated REST APIs for structured JSON retrieval, ensuring reliable data extraction and integrity.",
         "Analyzed query performance bottlenecks and optimized indexing strategies to enhance data retrieval speeds."
+      ]
+    },
+    {
+      id: "exp-1",
+      role: "Web Development Intern",
+      company: "Cognifyz Technologies",
+      period: "Nov 2024 – Dec 2024",
+      location: "Remote",
+      description: "Focused on designing, developing, and deploying modern web user interfaces using frontend tech stacks.",
+      highlights: [
+        "Developed responsive websites using HTML, CSS, and JavaScript.",
+        "Built interactive UI components and improved website usability and performance.",
+        "Developed interactive front-end components and data-driven dashboards using JavaScript, HTML5, and CSS3.",
+        "Integrated front-end forms with backend data endpoints, ensuring seamless data capture and input validation."
       ]
     }
   ],

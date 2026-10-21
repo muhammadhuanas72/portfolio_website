@@ -7,7 +7,8 @@ import { Eyebrow, Plus } from "./ui";
 const { experience, about } = portfolioData;
 
 const entries = [
-  ...experience.map((e, i) => ({
+  // Newest internship first, then education.
+  ...experience.map((e) => ({
     id: e.id,
     kind: "Internship",
     title: e.role,
@@ -15,7 +16,7 @@ const entries = [
     period: e.period,
     summary: e.description,
     points: e.highlights,
-    glyph: i === 0 ? "layers" : "shaft",
+    glyph: /java/i.test(e.role) ? "shaft" : "layers",
   })),
   ...about.timeline.map((t, i) => ({
     id: t.id,

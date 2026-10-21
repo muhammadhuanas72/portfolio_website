@@ -7,7 +7,7 @@ import { BOOT_DELAY } from "../lib/boot";
 const { name, titles, socials, avatar } = portfolioData.personalInfo;
 const education = portfolioData.about.timeline[0];
 const internships = portfolioData.experience;
-const latest = internships[internships.length - 1];
+const latest = internships[0]; // listed newest first
 const skill = (id) => portfolioData.skills.categories.find((c) => c.id === id).items;
 
 const facts = [
