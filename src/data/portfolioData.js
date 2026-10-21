@@ -7,7 +7,7 @@ export const portfolioData = {
       "UI/UX Enthusiast"
     ],
     introduction: "I build modern, responsive, and user-focused web applications while leveraging AI to accelerate development, improve productivity, and create innovative digital experiences.",
-    avatar: "/media/hero-photo.webp",
+    avatar: "/media/hero-illustration.webp",
     // Default resumes. The owner can replace these from /admin.html once Supabase is configured.
     resumes: [
       { slug: "software-dev", label: "Software Developer", url: "/resume/Anas_resume_software_dev.pdf" },

@@ -21,9 +21,9 @@ const facts = [
 // Callouts pinned to the photo (positions are % of the photo box). `open` places the
 // callout so it never covers the face.
 const markers = [
-  { x: 60, y: 14, open: "left-3 top-3", code: "01", title: titles[0], note: titles.slice(1).join(" · ") },
-  { x: 55, y: 29, open: "right-3 top-3", code: "02", title: education.title, note: `${education.year} · Crescent Institute` },
-  { x: 62, y: 45, open: "left-3 top-3", code: "03", title: `${internships.length}× internships`, note: internships[0].company },
+  { x: 56, y: 18, open: "left-3 top-3", code: "01", title: titles[0], note: titles.slice(1).join(" · ") },
+  { x: 50, y: 34, open: "right-3 top-3", code: "02", title: education.title, note: `${education.year} · Crescent Institute` },
+  { x: 59, y: 51, open: "left-3 top-3", code: "03", title: `${internships.length}× internships`, note: internships[0].company },
 ];
 
 export default function Hero() {
@@ -31,7 +31,6 @@ export default function Hero() {
   const stage = useRef(null);
   const coords = useRef(null);
   const figure = useRef(null);
-  const sharp = useRef(null);
   const sel = useRef(null);
   const lineH = useRef(null);
   const lineV = useRef(null);
@@ -39,15 +38,13 @@ export default function Hero() {
   const rulerY = useRef(null);
   const [active, setActive] = useState(null);
 
-  // Drafting interaction: crosshair lines and a coordinate readout follow the mouse across the
-  // sheet; dragging over the photo draws a selection that brings the background into focus.
-  // On touch, tapping the photo toggles focus for the whole frame.
+  // Drafting interaction: crosshair lines, ruler ticks and a coordinate readout follow the mouse
+  // across the sheet; dragging over the drawing measures a selection, like a drafting tool.
   useEffect(() => {
     const st = stage.current;
     const fig = figure.current;
-    const focus = sharp.current;
     const box = sel.current;
-    if (!st || !fig || !focus || !box) return;
+    if (!st || !fig || !box) return;
 
     const px = (v) => String(Math.max(0, Math.round(v))).padStart(4, "0");
     const clamp = (v, max) => Math.min(Math.max(v, 0), max);
@@ -55,8 +52,6 @@ export default function Hero() {
     let shown = false;
 
     const hide = () => {
-      focus.style.transition = "opacity 0.5s";
-      focus.style.opacity = "0";
       box.style.opacity = "0";
       shown = false;
     };
@@ -68,7 +63,6 @@ export default function Hero() {
       const r = Math.max(start.x, x);
       const t = Math.min(start.y, y);
       const b = Math.max(start.y, y);
-      focus.style.clipPath = `inset(${t}px ${f.width - r}px ${f.height - b}px ${l}px)`;
       Object.assign(box.style, { left: `${l}px`, top: `${t}px`, width: `${r - l}px`, height: `${b - t}px`, opacity: "1" });
       box.firstChild.textContent = `${Math.round(r - l)} × ${Math.round(b - t)} PX`;
     };
@@ -94,20 +88,10 @@ export default function Hero() {
       if (!start && shown) hide();
     };
     const down = (e) => {
-      if (e.button !== 0 || e.target.closest("[data-marker]")) return;
-      if (e.pointerType !== "mouse") {
-        if (shown) return hide();
-        focus.style.transition = "opacity 0.5s, clip-path 0.6s cubic-bezier(0.16, 1, 0.3, 1)";
-        focus.style.clipPath = "inset(0px 0px 0px 0px)";
-        focus.style.opacity = "1";
-        shown = true;
-        return;
-      }
+      if (e.button !== 0 || e.pointerType !== "mouse" || e.target.closest("[data-marker]")) return;
       const f = fig.getBoundingClientRect();
       start = { x: e.clientX - f.left, y: e.clientY - f.top };
       fig.setPointerCapture(e.pointerId);
-      focus.style.transition = "none";
-      focus.style.opacity = "1";
       shown = true;
       select(e);
     };
@@ -216,35 +200,25 @@ export default function Hero() {
           <div data-figure-wrap className="absolute inset-x-0 bottom-[8%] top-[9%] flex justify-center md:top-[8%]">
             <figure
               ref={figure}
-              data-cursor="Click and drag to bring the background into focus"
-              className="relative h-full max-w-[86%] aspect-[1024/1280] touch-pan-y"
+              data-cursor="Click and drag to measure"
+              className="relative h-full max-w-[86%] aspect-[869/1086] touch-pan-y"
             >
               <figcaption className="label absolute -top-5 left-0 text-mute">Fig. 01 — {name}</figcaption>
 
               <div data-print className="absolute inset-0 overflow-hidden border border-ink bg-paper-2 shadow-[10px_10px_0_0_var(--color-line)]">
                 <img
                   src={avatar}
-                  alt={`Photo of ${name}`}
-                  width="1024"
-                  height="1280"
+                  alt={`Drawing of ${name} on the steps of a building`}
+                  width="869"
+                  height="1086"
                   fetchPriority="high"
                   className="h-full w-full object-cover"
-                  draggable="false"
-                />
-                <img
-                  ref={sharp}
-                  src="/media/hero-photo-sharp.webp"
-                  alt=""
-                  aria-hidden="true"
-                  decoding="async"
-                  className="absolute inset-0 h-full w-full object-cover"
-                  style={{ opacity: 0, clipPath: "inset(50% 50% 50% 50%)" }}
                   draggable="false"
                 />
                 <div
                   ref={sel}
                   aria-hidden="true"
-                  className="pointer-events-none absolute border border-ink opacity-0 transition-opacity duration-300"
+                  className="pointer-events-none absolute border border-ink bg-ink/[0.07] opacity-0 transition-opacity duration-300"
                 >
                   <span className="label absolute left-1 top-1 whitespace-nowrap bg-ink px-1.5 py-0.5 text-[9px] text-paper" />
                 </div>
@@ -278,8 +252,8 @@ export default function Hero() {
           </div>
 
           <p className="label absolute bottom-3 left-6 text-mute md:bottom-5">
-            <span className="pointer-coarse:hidden">[ Click and drag on the photo · hover a marker ]</span>
-            <span className="hidden pointer-coarse:inline">[ Tap the photo to focus · tap a marker ]</span>
+            <span className="pointer-coarse:hidden">[ Click and drag to measure · hover a marker ]</span>
+            <span className="hidden pointer-coarse:inline">[ Tap a marker ]</span>
           </p>
           <p ref={coords} aria-hidden="true" className="label absolute bottom-5 right-6 hidden text-mute md:block">
             X:0000PX  Y:0000PX
