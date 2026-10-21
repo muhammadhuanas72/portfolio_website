@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { useContent } from "../lib/contentContext";
 import { gsap, ScrollTrigger, useGsap, MOTION_OK, DESKTOP, MOBILE } from "../lib/motion";
 import IsoGlyph from "./IsoGlyph";
+import RenderReveal from "./RenderReveal";
 import { Btn, Corners, Eyebrow, Plus } from "./ui";
 
 const host = (url) => url.replace(/^https?:\/\//, "").replace(/\/$/, "");
@@ -171,15 +172,25 @@ function WebProject({ p, i }) {
         <Corners />
         <div aria-hidden="true" className="dash-x absolute inset-x-0 top-1/2 h-px" />
         <div aria-hidden="true" className="dash-y absolute inset-y-0 left-1/2 w-px" />
-        <div data-reveal className="relative h-full overflow-hidden border border-ink bg-paper-2 shadow-[8px_8px_0_0_var(--color-line)]">
+        <div className="relative h-full overflow-hidden border border-ink bg-paper-2 shadow-[8px_8px_0_0_var(--color-line)]">
           <div className="label flex items-center gap-1.5 border-b border-ink bg-paper px-3 py-2 text-mute">
             <span className="h-2 w-2 rounded-full border border-mute" />
             <span className="h-2 w-2 rounded-full border border-mute" />
             <span className="h-2 w-2 rounded-full border border-mute" />
             <span className="ml-3 truncate">{p.demoUrl ? host(p.demoUrl) : p.title}</span>
           </div>
-          {p.image ? (
+          {p.image && p.lines ? (
+            <RenderReveal
+              lines={p.lines}
+              src={p.image}
+              alt={`Screenshot of ${p.title}`}
+              className="aspect-[16/9] w-full md:aspect-auto md:h-[calc(100%-33px)]"
+              imgClassName="object-cover object-top"
+              renderClassName="contrast-[1.05] grayscale transition-[filter] duration-700 ease-out-expo group-hover:grayscale-0 group-[.in-view]:grayscale-0"
+            />
+          ) : p.image ? (
             <img
+              data-reveal
               src={p.image}
               alt={`Screenshot of ${p.title}`}
               loading="lazy"

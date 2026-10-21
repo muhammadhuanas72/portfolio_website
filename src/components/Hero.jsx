@@ -35,6 +35,8 @@ export default function Hero() {
   const sel = useRef(null);
   const lineH = useRef(null);
   const lineV = useRef(null);
+  const rulerX = useRef(null);
+  const rulerY = useRef(null);
   const [active, setActive] = useState(null);
 
   // Drafting interaction: crosshair lines and a coordinate readout follow the mouse across the
@@ -79,6 +81,10 @@ export default function Hero() {
       if (e.pointerType === "mouse") {
         lineH.current.style.transform = `translate3d(0, ${y}px, 0)`;
         lineV.current.style.transform = `translate3d(${x}px, 0, 0)`;
+        rulerX.current.style.transform = `translate3d(${x}px, 0, 0)`;
+        rulerY.current.style.transform = `translate3d(0, ${y}px, 0)`;
+        rulerX.current.firstChild.textContent = px(x);
+        rulerY.current.firstChild.textContent = px(y);
         st.classList.add("crosshair-on");
       }
       if (start) select(e);
@@ -158,6 +164,13 @@ export default function Hero() {
         <div aria-hidden="true" className="dash-x absolute inset-x-6 top-1/2 hidden h-px opacity-70 md:block" />
         <div ref={lineH} aria-hidden="true" className="crosshair pointer-events-none absolute left-0 top-0 z-20 h-px w-full bg-ink/20" />
         <div ref={lineV} aria-hidden="true" className="crosshair pointer-events-none absolute left-0 top-0 z-20 h-full w-px bg-ink/20" />
+        {/* Ruler indicators that track the pointer along the top and left scales */}
+        <div ref={rulerX} aria-hidden="true" className="crosshair pointer-events-none absolute left-0 top-1 z-20 h-4 w-px bg-ink">
+          <span className="label absolute left-1.5 top-0.5 bg-paper px-0.5 text-[9px] text-ink">0000</span>
+        </div>
+        <div ref={rulerY} aria-hidden="true" className="crosshair pointer-events-none absolute left-1 top-0 z-20 h-px w-4 bg-ink">
+          <span className="label absolute left-0 top-1.5 bg-paper px-0.5 text-[9px] text-ink">0000</span>
+        </div>
 
         {/* Who am I */}
         <div className="relative z-10 order-2 flex flex-col justify-center px-5 pb-12 pt-8 md:order-1 md:col-span-6 md:py-12 md:pl-12 md:pr-10 lg:pl-16">

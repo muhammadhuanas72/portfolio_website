@@ -140,8 +140,6 @@ export const portfolioData = {
           "GitHub",
           "VS Code",
           "Android Studio",
-          "Figma",
-          "Jupyter Notebook",
           "MySQL Workbench"
         ]
       }
@@ -187,6 +185,7 @@ export const portfolioData = {
       title: "Portable Fitness Studio",
       subtitle: "Fullstack Booking Platform",
       image: "/work/portable_fitness.webp",
+      lines: "/work/portable_fitness-lines.webp",
       demoUrl: "https://portable-fitness-studio.onrender.com/",
       githubUrl: "https://github.com/muhammadhuanas72/portable_fitness_studio",
       tech: ["Node.js", "Express", "Python", "Supabase", "SQLite", "Razorpay API", "HTML5", "CSS3", "JavaScript"],
@@ -209,6 +208,7 @@ export const portfolioData = {
       title: "Auto Spare Parts E-Commerce",
       subtitle: "E-Commerce Frontend Website",
       image: "/work/spare_parts.webp",
+      lines: "/work/spare_parts-lines.webp",
       demoUrl: "https://ecomautospares.netlify.app",
       githubUrl: "https://github.com/muhammadhuanas72/AutoSpares_website",
       tech: ["HTML5", "CSS3", "JavaScript", "Responsive Design"],
@@ -231,6 +231,7 @@ export const portfolioData = {
       title: "Object Detection System",
       subtitle: "Computer Vision Web App",
       image: "/work/object_detection.webp",
+      lines: "/work/object_detection-lines.webp",
       demoUrl: "https://object-detection-cv-2834.onrender.com/",
       githubUrl: "https://github.com/muhammadhuanas72/object_detection_cv",
       tech: ["Python", "OpenCV", "Flask", "Docker", "HTML5", "CSS3", "JavaScript"],

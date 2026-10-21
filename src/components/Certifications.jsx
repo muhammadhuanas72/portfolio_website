@@ -1,9 +1,30 @@
 import { useRef, useState } from "react";
 import { portfolioData } from "../data/portfolioData";
 import { gsap, useGsap, DESKTOP } from "../lib/motion";
+import RenderReveal from "./RenderReveal";
 import { Corners, Eyebrow } from "./ui";
 
 const { certifications } = portfolioData;
+const { name } = portfolioData.personalInfo;
+
+// Perspective floor grid converging on a vanishing point, as in an architectural elevation.
+function FloorGrid() {
+  const vx = 50;
+  const rays = [-60, -30, -10, 5, 18, 30, 42, 58, 70, 82, 95, 110, 130, 160];
+  const rows = [0, 6, 14, 25, 40];
+  return (
+    <svg viewBox="0 0 100 40" preserveAspectRatio="none" className="absolute inset-x-0 bottom-0 h-[20%] w-full" aria-hidden="true">
+      <g stroke="var(--color-ink)" strokeWidth="0.15" fill="none" vectorEffect="non-scaling-stroke">
+        {rays.map((x) => (
+          <line key={x} x1={vx + (x - vx) * 0.12} y1="0" x2={x} y2="40" vectorEffect="non-scaling-stroke" />
+        ))}
+        {rows.map((y) => (
+          <line key={y} x1="0" y1={y} x2="100" y2={y} vectorEffect="non-scaling-stroke" />
+        ))}
+      </g>
+    </svg>
+  );
+}
 
 export default function Certifications() {
   const root = useRef(null);
@@ -12,9 +33,8 @@ export default function Certifications() {
   useGsap(root, (add) => {
     add(DESKTOP, () => {
       const st = { trigger: root.current, start: "top bottom", end: "bottom top", scrub: true };
-      gsap.fromTo("[data-disc]", { yPercent: 30 }, { yPercent: -40, ease: "none", scrollTrigger: st });
-      gsap.fromTo("[data-slab]", { yPercent: -10 }, { yPercent: 20, ease: "none", scrollTrigger: st });
-      gsap.fromTo("[data-figure]", { yPercent: 6 }, { yPercent: -4, ease: "none", scrollTrigger: st });
+      gsap.fromTo("[data-disc]", { yPercent: 40 }, { yPercent: -40, ease: "none", scrollTrigger: st });
+      gsap.fromTo("[data-figure]", { y: 30 }, { y: -20, ease: "none", scrollTrigger: st });
     });
   });
 
@@ -24,17 +44,28 @@ export default function Certifications() {
         {/* Composition */}
         <div className="relative min-h-[380px] overflow-hidden border-b border-line bg-paper-2 md:min-h-[640px] md:border-b-0 md:border-r">
           <Corners />
-          <div data-disc aria-hidden="true" className="absolute left-[8%] top-[18%] aspect-square w-[42%] hatch rounded-full" />
-          <div data-slab aria-hidden="true" className="absolute right-[16%] top-0 h-[70%] w-[16%] hatch-dense" />
-          <div aria-hidden="true" className="absolute inset-x-0 bottom-[14%] h-px bg-ink" />
-          <img
-            data-figure
-            src="/media/portrait-ink.png"
-            alt=""
-            aria-hidden="true"
-            loading="lazy"
-            className="absolute bottom-[14%] left-1/2 h-[78%] w-auto -translate-x-1/2"
-          />
+          {/* Construction lines */}
+          <div aria-hidden="true" className="dash-x absolute inset-x-0 top-[12%] h-px" />
+          <div aria-hidden="true" className="absolute bottom-[20%] left-[10%] top-[6%] w-px bg-line" />
+          <div aria-hidden="true" className="absolute bottom-[20%] right-[10%] top-[6%] w-px bg-line" />
+          <div data-disc aria-hidden="true" className="hatch absolute right-[12%] top-[8%] aspect-square w-[26%] rounded-full" />
+          <FloorGrid />
+          <div aria-hidden="true" className="absolute inset-x-0 bottom-[20%] h-px bg-ink" />
+          <span aria-hidden="true" className="absolute bottom-[7%] left-[14%] h-2.5 w-2.5 bg-signal" />
+
+          <div data-figure className="absolute bottom-[20%] left-1/2 h-[70%] -translate-x-1/2 aspect-[1024/1280]">
+            <div aria-hidden="true" className="absolute -left-[14%] -right-[14%] top-[18%] h-px bg-ink/50" />
+            <div aria-hidden="true" className="absolute -bottom-[6%] -top-[6%] left-[24%] w-px bg-ink/40" />
+            <RenderReveal
+              lines="/media/hero-photo-lines.webp"
+              src="/media/hero-photo.webp"
+              alt={`Photo of ${name}`}
+              className="h-full w-full border border-ink shadow-[8px_8px_0_0_var(--color-line)]"
+              imgClassName="object-cover"
+              start="top 80%"
+              end="center 50%"
+            />
+          </div>
           <p className="label absolute bottom-4 left-4 text-mute">[ {certifications.length} certifications ]</p>
         </div>
 
