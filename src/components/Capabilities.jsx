@@ -65,7 +65,8 @@ export default function Capabilities() {
               <span className="text-mute">[0{i + 1}]</span>
             </header>
 
-            <div data-glyph className="relative flex aspect-[4/3] items-center justify-center border-b border-dashed border-line text-ink-2">
+            {/* Large drawing from tablet up; phones get a small one beside the title */}
+            <div data-glyph className="relative hidden aspect-[4/3] items-center justify-center border-b border-dashed border-line text-ink-2 sm:flex">
               <Plus at="tl" />
               <Plus at="tr" />
               <Plus at="bl" />
@@ -73,8 +74,11 @@ export default function Capabilities() {
               <IsoGlyph name={glyphFor[c.id]} className="h-[58%] w-[58%]" />
             </div>
 
-            <div className="flex flex-1 flex-col gap-4 px-4 pb-6 pt-5">
-              <h3 className="display text-[clamp(18px,1.5vw,22px)] leading-[1]">{c.title}</h3>
+            <div className="flex flex-1 flex-col gap-3 px-4 pb-5 pt-4 sm:gap-4 sm:pb-6 sm:pt-5">
+              <div className="flex items-center gap-3">
+                <IsoGlyph name={glyphFor[c.id]} className="h-11 w-11 shrink-0 text-ink-2 sm:hidden" />
+                <h3 className="display text-[clamp(18px,1.5vw,22px)] leading-[1]">{c.title}</h3>
+              </div>
               <p className="text-[13px] leading-snug text-ink-2">{c.description}</p>
               <ul className="mt-auto flex flex-wrap gap-1.5 pt-2">
                 {c.items.map((it) => (

@@ -88,7 +88,7 @@ export default function Experience() {
               className="relative grid border-b border-line md:h-full md:w-[min(72vw,980px)] md:grid-rows-[46%_auto_1fr] md:border-b-0 md:border-r"
             >
               {/* Drawing */}
-              <div className="relative flex min-h-[220px] items-center justify-center bg-[linear-gradient(var(--color-line)_1px,transparent_1px),linear-gradient(90deg,var(--color-line)_1px,transparent_1px)] bg-[size:48px_48px] bg-center">
+              <div className="relative hidden min-h-[220px] items-center justify-center bg-[linear-gradient(var(--color-line)_1px,transparent_1px),linear-gradient(90deg,var(--color-line)_1px,transparent_1px)] bg-[size:48px_48px] bg-center md:flex">
                 <Plus at="tl" />
                 <Plus at="tr" />
                 <IsoGlyph name={e.glyph} className="h-[70%] max-h-[220px] w-auto text-ink-2" />
@@ -103,6 +103,9 @@ export default function Experience() {
 
               {/* Title bar on the line */}
               <div className="relative z-10 flex flex-col gap-1 bg-ink px-4 py-3 text-paper md:mr-[18%] md:flex-row md:items-center md:justify-between md:gap-6 md:px-6">
+                <p className="label text-paper/70 md:hidden">
+                  {e.kind} · {e.period}
+                </p>
                 <h3 className="display text-[clamp(20px,1.9vw,28px)]">{e.title}</h3>
                 <p className="text-[13px] text-paper/70">{e.org}</p>
               </div>

@@ -18,7 +18,7 @@ function Col({ title, children, className = "" }) {
   return (
     <div className={`border-b border-line px-4 py-5 md:border-l md:px-5 ${className}`}>
       <p className="label text-mute">{title}</p>
-      <ul className="mt-3 space-y-1.5 text-[14px]">{children}</ul>
+      <ul className="mt-3 text-[14px] md:space-y-1.5 [&_a]:inline-block [&_a]:py-1.5 md:[&_a]:py-0">{children}</ul>
     </div>
   );
 }

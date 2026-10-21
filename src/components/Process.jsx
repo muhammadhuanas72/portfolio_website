@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { portfolioData } from "../data/portfolioData";
 import { useContent } from "../lib/contentContext";
-import { gsap, useGsap, scrollToId, DESKTOP, MOBILE } from "../lib/motion";
+import { gsap, useGsap, scrollToId, DESKTOP } from "../lib/motion";
 import { Corners } from "./ui";
 
 const { passions } = portfolioData.about;
@@ -10,7 +10,7 @@ const captionsFor = (count) => [
   { title: passions[0].title, text: passions[0].description, hint: "Scroll to continue" },
   { title: passions[1].title, text: passions[1].description, hint: "Scroll to continue" },
   { title: passions[2].title, text: passions[2].description, hint: "Scroll to continue" },
-  { title: "Selected work", text: `${count} builds, each shipped and live.`, hint: "Click on a marker" },
+  { title: "Selected work", text: `${count} builds, each shipped and live.`, hint: "Tap or click a marker" },
 ];
 
 // Wireframe of a web page, drawn in a 800×560 sheet. Every fragment starts scattered and
@@ -141,13 +141,13 @@ export default function Process() {
         .to({}, { duration: 0.8 });
     };
 
+    // Phones skip the pinned build-up and show the finished drawing with its markers.
     add(DESKTOP, build(380));
-    add(MOBILE, build(240));
   });
 
   return (
     <section id="process" ref={root} className="border-b border-line">
-      <div ref={pin} className="relative flex h-[calc(100svh-var(--nav-h))] min-h-[520px] items-center justify-center overflow-hidden bg-paper">
+      <div ref={pin} className="relative flex flex-col items-center justify-center gap-6 overflow-hidden bg-paper py-10 md:h-[calc(100svh-var(--nav-h))] md:min-h-[520px] md:flex-row md:gap-0 md:py-0">
         <Corners />
 
         {/* Sheet titles */}
@@ -189,7 +189,7 @@ export default function Process() {
                 window.dispatchEvent(new CustomEvent("work:open", { detail: i }));
                 scrollToId("work-gallery");
               }}
-              className="group absolute flex -translate-y-1/2 items-center gap-2"
+              className="group absolute flex -translate-y-1/2 items-center gap-2 before:absolute before:-inset-2 before:content-['']"
               style={{
                 left: `${((c.x + 14 - VB.x) / VB.w) * 100}%`,
                 top: `${((c.y + 40 - VB.y) / VB.h) * 100}%`,
@@ -205,7 +205,7 @@ export default function Process() {
         </div>
 
         {/* Caption box */}
-        <div data-caption className="caption absolute bottom-6 left-4 w-[min(300px,calc(100%-32px))] md:left-6">
+        <div data-caption className="caption relative w-[calc(100%-32px)] md:absolute md:bottom-6 md:left-6 md:w-[min(300px,calc(100%-32px))]">
           <p className="label bg-ink px-2.5 py-1.5 text-paper">Process</p>
           <div className="relative min-h-[118px]">
             {captions.map((c, i) => (
