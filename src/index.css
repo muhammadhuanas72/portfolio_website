@@ -294,10 +294,10 @@ html.lenis body {
 /* Hero drawing: centred on the sheet, its edges dissolving into the paper */
 .hero-fade {
   mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent),
-    linear-gradient(to bottom, transparent, #000 5%, #000 88%, transparent);
+    linear-gradient(to bottom, transparent, #000 4%, #000 94%, transparent);
   mask-composite: intersect;
   -webkit-mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent),
-    linear-gradient(to bottom, transparent, #000 5%, #000 88%, transparent);
+    linear-gradient(to bottom, transparent, #000 4%, #000 94%, transparent);
   -webkit-mask-composite: source-in;
 }
 

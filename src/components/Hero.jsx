@@ -11,18 +11,15 @@ const education = portfolioData.about.timeline[0];
 const skill = (id) => portfolioData.skills.categories.find((c) => c.id === id).items;
 
 // The drawing builds itself on load: construction lines, the plants and doorway, then the
-// figure (a 4 s clip, 48 fps). It ends on its last frame, which is the finished drawing.
+// figure sketched and shaded (a 9 s clip played at 1.5x). It ends on its last frame, which is
+// also the resting still.
 const DRAW = {
   src: "/videos/hero-draw.mp4",
   srcMobile: "/videos/hero-draw-mobile.mp4",
   still: avatar,
   stillMobile: "/media/hero-drawn-mobile.webp",
 };
-// The clip is framed tighter than the drawing sheet: this places it at the same scale and
-// position inside the sheet, and fades its top and bottom edges into the paper.
-const PLACE = { left: "-1.56%", top: "11.31%", width: "103.12%", height: "77.34%" };
-const FEATHER = "linear-gradient(to bottom, transparent, #000 8%, #000 90%, transparent)";
-const placed = { ...PLACE, maskImage: FEATHER, WebkitMaskImage: FEATHER };
+const SPEED = 1.5;
 
 // Plays the build-up once, after the boot intro. Reduced motion, a clip that can't start
 // within a few seconds (slow connection) or blocked playback show the finished drawing.
@@ -59,7 +56,10 @@ function HeroDrawing({ onDone }) {
       clearTimeout(giveUp);
       v.style.opacity = "1";
     };
-    const start = setTimeout(() => v.play().catch(() => finish(true)), (BOOT_DELAY + 0.15) * 1000);
+    const start = setTimeout(() => {
+      v.playbackRate = SPEED;
+      v.play().catch(() => finish(true));
+    }, (BOOT_DELAY + 0.15) * 1000);
     const giveUp = setTimeout(() => finish(true), (BOOT_DELAY + 5) * 1000);
     const onEnded = () => finish(false);
     const onError = () => finish(true);
@@ -83,8 +83,7 @@ function HeroDrawing({ onDone }) {
           src={small ? DRAW.stillMobile : DRAW.still}
           alt={label}
           fetchPriority="high"
-          className="absolute max-w-none object-cover"
-          style={placed}
+          className="absolute inset-0 h-full w-full object-cover"
           draggable="false"
         />
       ) : (
@@ -99,8 +98,7 @@ function HeroDrawing({ onDone }) {
           tabIndex={-1}
           role="img"
           aria-label={label}
-          className="absolute max-w-none object-cover opacity-0"
-          style={placed}
+          className="absolute inset-0 h-full w-full object-cover opacity-0"
         />
       )}
     </div>
@@ -124,9 +122,9 @@ const factsFor = (work) => [
 // Callouts pinned to the photo (positions are % of the photo box). `open` places the
 // callout so it never covers the face.
 const markersFor = (work) => [
-  { x: 50, y: 18, open: "left-3 top-3", code: "01", title: titles[0], note: titles.slice(1).join(" · ") },
-  { x: 50.5, y: 33, open: "right-3 top-3", code: "02", title: education.title, note: `${education.year} · Crescent Institute` },
-  { x: 55, y: 50, open: "left-3 top-3", code: "03", title: work.count, note: work.latest },
+  { x: 48.4, y: 11.5, open: "left-3 top-3", code: "01", title: titles[0], note: titles.slice(1).join(" · ") },
+  { x: 51.3, y: 31, open: "right-3 top-3", code: "02", title: education.title, note: `${education.year} · Crescent Institute` },
+  { x: 54.9, y: 50.3, open: "left-3 top-3", code: "03", title: work.count, note: work.latest },
 ];
 
 export default function Hero() {
@@ -266,7 +264,7 @@ export default function Hero() {
             <figure
               ref={figure}
               data-cursor="Click and drag to measure"
-              className="absolute left-1/2 top-0 h-full -translate-x-1/2 aspect-[1448/1086] touch-pan-y"
+              className="absolute left-1/2 top-[9%] h-[82%] -translate-x-1/2 aspect-video touch-pan-y md:top-[3%] md:h-[94%]"
             >
               <div data-print className="absolute inset-0 overflow-hidden">
                 <HeroDrawing onDone={drawn} />
