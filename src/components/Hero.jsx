@@ -205,7 +205,8 @@ export default function Hero() {
             >
               <figcaption className="label absolute -top-5 left-0 text-mute">Fig. 01 — {name}</figcaption>
 
-              <div data-print className="absolute inset-0 overflow-hidden border border-ink bg-paper-2 shadow-[10px_10px_0_0_var(--color-line)]">
+              {/* No frame: the drawing sits straight on the sheet, its cropped edges fading into the paper */}
+              <div data-print className="absolute inset-0 overflow-hidden">
                 <img
                   src={avatar}
                   alt={`Drawing of ${name} on the steps of a building`}
@@ -213,6 +214,14 @@ export default function Hero() {
                   height="1086"
                   fetchPriority="high"
                   className="h-full w-full object-cover"
+                  style={{
+                    maskImage:
+                      "linear-gradient(to right, transparent, #000 7%, #000 93%, transparent), linear-gradient(to bottom, transparent, #000 5%, #000 92%, transparent)",
+                    maskComposite: "intersect",
+                    WebkitMaskImage:
+                      "linear-gradient(to right, transparent, #000 7%, #000 93%, transparent), linear-gradient(to bottom, transparent, #000 5%, #000 92%, transparent)",
+                    WebkitMaskComposite: "source-in",
+                  }}
                   draggable="false"
                 />
                 <div
