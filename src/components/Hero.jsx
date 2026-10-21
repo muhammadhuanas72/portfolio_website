@@ -149,10 +149,10 @@ export default function Hero() {
         <div ref={lineH} aria-hidden="true" className="crosshair pointer-events-none absolute left-0 top-0 z-20 h-px w-full bg-ink/20" />
         <div ref={lineV} aria-hidden="true" className="crosshair pointer-events-none absolute left-0 top-0 z-20 h-full w-px bg-ink/20" />
         {/* Ruler indicators that track the pointer along the top and left scales */}
-        <div ref={rulerX} aria-hidden="true" className="crosshair pointer-events-none absolute left-0 top-1 z-20 h-4 w-px bg-ink">
+        <div ref={rulerX} aria-hidden="true" className="crosshair pointer-events-none absolute left-0 top-1 z-20 h-4 w-px bg-signal">
           <span className="label absolute left-1.5 top-0.5 bg-paper px-0.5 text-[9px] text-ink">0000</span>
         </div>
-        <div ref={rulerY} aria-hidden="true" className="crosshair pointer-events-none absolute left-1 top-0 z-20 h-px w-4 bg-ink">
+        <div ref={rulerY} aria-hidden="true" className="crosshair pointer-events-none absolute left-1 top-0 z-20 h-px w-4 bg-signal">
           <span className="label absolute left-0 top-1.5 bg-paper px-0.5 text-[9px] text-ink">0000</span>
         </div>
 
@@ -227,7 +227,7 @@ export default function Hero() {
                 <div
                   ref={sel}
                   aria-hidden="true"
-                  className="pointer-events-none absolute border border-ink bg-ink/[0.07] opacity-0 transition-opacity duration-300"
+                  className="pointer-events-none absolute border border-signal bg-signal/10 opacity-0 transition-opacity duration-300"
                 >
                   <span className="label absolute left-1 top-1 whitespace-nowrap bg-ink px-1.5 py-0.5 text-[9px] text-paper" />
                 </div>

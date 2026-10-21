@@ -129,7 +129,7 @@ export default function Intro() {
           <div
             data-sun
             aria-hidden="true"
-            className="absolute right-[14%] top-[10%] h-[34%] w-auto aspect-square hatch rounded-full"
+            className="absolute right-[14%] top-[10%] h-[34%] w-auto aspect-square rounded-full bg-signal"
           />
           <div className="absolute inset-[8%]">
             <Exploded />

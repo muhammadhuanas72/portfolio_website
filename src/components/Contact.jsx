@@ -90,7 +90,7 @@ export default function Contact() {
           </Col>
           <Col title="Contact">
             <li>
-              <a href={`mailto:${socials.email}`} className="break-all text-ink underline-offset-4 hover:underline">
+              <a href={`mailto:${socials.email}`} className="break-all text-signal underline-offset-4 hover:underline">
                 {socials.email}
               </a>
             </li>

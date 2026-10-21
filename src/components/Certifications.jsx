@@ -48,7 +48,7 @@ export default function Certifications() {
           <div aria-hidden="true" className="dash-x absolute inset-x-0 top-[12%] h-px" />
           <div aria-hidden="true" className="absolute bottom-[20%] left-[10%] top-[6%] w-px bg-line" />
           <div aria-hidden="true" className="absolute bottom-[20%] right-[10%] top-[6%] w-px bg-line" />
-          <div data-disc aria-hidden="true" className="hatch absolute right-[12%] top-[8%] aspect-square w-[26%] rounded-full" />
+          <div data-disc aria-hidden="true" className="absolute right-[12%] top-[8%] aspect-square w-[26%] rounded-full bg-signal" />
           <FloorGrid />
           <div aria-hidden="true" className="absolute inset-x-0 bottom-[20%] h-px bg-ink" />
           <span aria-hidden="true" className="absolute bottom-[7%] left-[14%] h-2.5 w-2.5 bg-signal" />

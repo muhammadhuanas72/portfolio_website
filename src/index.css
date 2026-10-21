@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* ---------- Design tokens: drafting paper and graphite, black and white only ---------- */
+/* ---------- Design tokens: drafting paper, graphite ink, one signal orange (as on Heron) ---------- */
 @theme {
   --font-sans: "Inter Tight", system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, monospace;
@@ -12,7 +12,7 @@
   --color-mute: #8a8a87;
   --color-faint: #b4b4b0;
   --color-line: rgba(40, 40, 40, 0.16);
-  --color-signal: #111111;
+  --color-signal: #f54400;
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -167,25 +167,10 @@ img {
   border-left: 1px dashed rgba(255, 255, 255, 0.7);
 }
 .btn-signal:hover {
-  background: var(--color-paper);
-  border-color: var(--color-signal);
-  color: var(--color-signal);
-}
-.btn-signal:hover > span + span {
-  border-left-color: var(--color-signal);
+  background: var(--color-ink);
+  border-color: var(--color-ink);
 }
 
-/* Pencil hatching for large shapes */
-.hatch {
-  border: 1px solid var(--color-ink);
-  background: repeating-linear-gradient(45deg, var(--color-ink) 0 1px, transparent 1px 7px);
-}
-.hatch-dense {
-  border: 1px solid var(--color-ink);
-  background:
-    repeating-linear-gradient(45deg, var(--color-ink) 0 1px, transparent 1px 5px),
-    repeating-linear-gradient(-45deg, var(--color-ink) 0 1px, transparent 1px 9px);
-}
 
 /* Caption box used by the scroll story */
 .caption {
@@ -226,7 +211,7 @@ html.cursor-in .cursor-layer {
   top: -0.5px;
   width: 14px;
   height: 1px;
-  background: var(--color-ink);
+  background: var(--color-signal);
   transition: transform 0.35s var(--ease-out-expo), background-color 0.2s;
 }
 .cursor-plus > span + span {
