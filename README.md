@@ -64,11 +64,16 @@ Then open `/admin.html`, enter the owner email, and use the link that arrives.
   resume" adds a new one with its own name. Built-in resumes (in `public/resume/`) can be
   removed from the site and restored, or switched back with "Use original"; added ones can
   be deleted.
-- **Projects**: every project is listed. Built-in ones (`src/data/projects.json`) can be
-  removed from the site and restored; the form adds new ones (title, category, description,
-  highlights, tech, links, screenshot PNG/JPG/WebP under 4 MB), which can be deleted.
+- **Projects**: every project is listed. "Edit" changes any of them and can attach a
+  screenshot (PNG/JPG/WebP, 4 MB) and a downloadable file (.pbix, .xlsx, .xls, .csv, .pdf,
+  .zip, 50 MB) shown as a "Download" button. Built-in ones (`src/data/projects.json`) can be
+  removed and restored, or reset with "Use original"; added ones can be deleted.
+- **Certifications**: same pattern for "Always learning": add, edit, remove/restore, with
+  an optional credential link or certificate file (PDF/PNG/JPG/WebP, 10 MB) shown as
+  "View certificate".
 
-Removing a built-in item only hides it (the `hidden` table); nothing in the code changes.
+Removing a built-in item only hides it (the `hidden` table), and editing one stores a copy
+that replaces it on the site; nothing in the code changes.
 
 ## Deploying on Render
 

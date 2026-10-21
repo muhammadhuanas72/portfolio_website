@@ -48,17 +48,34 @@ alter table public.resumes add constraint resumes_slug_format check (slug ~ '^[a
 alter table public.resumes drop constraint if exists resumes_label_length;
 alter table public.resumes add constraint resumes_label_length check (char_length(label) between 1 and 60);
 
--- Built-in projects and resumes (from the code) that the owner has removed from the site.
+-- Certifications added or edited by the owner. `replaces` points at a built-in certificate's id.
+create table if not exists public.certifications (
+  id           uuid primary key default gen_random_uuid(),
+  created_at   timestamptz not null default now(),
+  replaces     text unique,
+  title        text not null check (char_length(title) between 1 and 160),
+  issuer       text,
+  date         text,
+  description  text,
+  link         text check (link is null or link ~* '^https?://'),
+  file_path    text,
+  file_name    text
+);
+
+-- Built-in items (from the code) that the owner has removed from the site.
 create table if not exists public.hidden (
-  kind        text not null check (kind in ('project', 'resume')),
+  kind        text not null,
   item_id     text not null,
   created_at  timestamptz not null default now(),
   primary key (kind, item_id)
 );
+alter table public.hidden drop constraint if exists hidden_kind_check;
+alter table public.hidden add constraint hidden_kind_check check (kind in ('project', 'resume', 'certification'));
 
 alter table public.projects enable row level security;
 alter table public.resumes  enable row level security;
 alter table public.hidden   enable row level security;
+alter table public.certifications enable row level security;
 
 drop policy if exists "projects are public"      on public.projects;
 drop policy if exists "owner manages projects"   on public.projects;
@@ -66,6 +83,15 @@ drop policy if exists "resumes are public"       on public.resumes;
 drop policy if exists "owner manages resumes"    on public.resumes;
 drop policy if exists "hidden is public"         on public.hidden;
 drop policy if exists "owner manages hidden"     on public.hidden;
+drop policy if exists "certifications are public"    on public.certifications;
+drop policy if exists "owner manages certifications" on public.certifications;
+
+create policy "certifications are public" on public.certifications
+  for select using (true);
+create policy "owner manages certifications" on public.certifications
+  for all to authenticated
+  using (public.is_portfolio_owner())
+  with check (public.is_portfolio_owner());
 
 create policy "hidden is public" on public.hidden
   for select using (true);
@@ -95,7 +121,8 @@ values
   ('project-images', 'project-images', true, 4194304, array['image/png', 'image/jpeg', 'image/webp']),
   ('project-files',  'project-files',  true, 52428800, array[
     'application/octet-stream', 'application/pdf', 'text/csv', 'application/zip', 'application/x-zip-compressed',
-    'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])
+    'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']),
+  ('certificates',   'certificates',   true, 10485760, array['application/pdf', 'image/png', 'image/jpeg', 'image/webp'])
 on conflict (id) do update
   set public = excluded.public,
       file_size_limit = excluded.file_size_limit,
@@ -109,15 +136,15 @@ drop policy if exists "owner lists portfolio files"   on storage.objects;
 -- Storage looks a file up before removing or replacing it, so deletes need a select policy too.
 create policy "owner lists portfolio files" on storage.objects
   for select to authenticated
-  using (bucket_id in ('resumes', 'project-images', 'project-files') and public.is_portfolio_owner());
+  using (bucket_id in ('resumes', 'project-images', 'project-files', 'certificates') and public.is_portfolio_owner());
 
 create policy "owner uploads portfolio files" on storage.objects
   for insert to authenticated
-  with check (bucket_id in ('resumes', 'project-images', 'project-files') and public.is_portfolio_owner());
+  with check (bucket_id in ('resumes', 'project-images', 'project-files', 'certificates') and public.is_portfolio_owner());
 create policy "owner updates portfolio files" on storage.objects
   for update to authenticated
-  using (bucket_id in ('resumes', 'project-images', 'project-files') and public.is_portfolio_owner());
+  using (bucket_id in ('resumes', 'project-images', 'project-files', 'certificates') and public.is_portfolio_owner());
 create policy "owner deletes portfolio files" on storage.objects
   for delete to authenticated
-  using (bucket_id in ('resumes', 'project-images', 'project-files') and public.is_portfolio_owner());
+  using (bucket_id in ('resumes', 'project-images', 'project-files', 'certificates') and public.is_portfolio_owner());
 -- Public buckets serve files by URL, so no public select policy on storage.objects is needed.

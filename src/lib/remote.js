@@ -5,7 +5,7 @@ export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 export const remoteEnabled = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
-export const BUCKETS = { resumes: "resumes", images: "project-images", files: "project-files" };
+export const BUCKETS = { resumes: "resumes", images: "project-images", files: "project-files", certificates: "certificates" };
 
 export const publicUrl = (bucket, path) =>
   path ? `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path.split("/").map(encodeURIComponent).join("/")}` : null;
@@ -40,6 +40,20 @@ export const toProject = (row) => ({
   replaces: row.replaces,
 });
 
+export const toCertification = (row) => ({
+  id: row.id,
+  remote: true,
+  replaces: row.replaces,
+  title: row.title,
+  issuer: row.issuer,
+  date: row.date,
+  description: row.description,
+  link: row.link,
+  file: publicUrl(BUCKETS.certificates, row.file_path),
+  filePath: row.file_path,
+  fileName: row.file_name,
+});
+
 export const toResume = (row) => ({
   slug: row.slug,
   label: row.label,
@@ -64,18 +78,28 @@ export function mergeContent(base, remote) {
     ...base.projects.map((p) => remote.projects.find((r) => r.replaces === p.id) ?? p),
     ...remote.projects.filter((r) => !r.replaces),
   ].filter((p) => !hidden.has(`project:${p.replaces ?? p.id}`));
-  return { projects, resumes };
+  const certifications = [
+    ...base.certifications.map((c) => remote.certifications.find((r) => r.replaces === c.id) ?? c),
+    ...remote.certifications.filter((r) => !r.replaces),
+  ].filter((c) => !hidden.has(`certification:${c.replaces ?? c.id}`));
+  return { projects, resumes, certifications };
 }
 
 export async function fetchRemote() {
   if (!remoteEnabled) return null;
   try {
-    const [projects, resumes, hidden] = await Promise.all([
+    const [projects, resumes, certifications, hidden] = await Promise.all([
       get("projects", "select=*&order=sort.asc,created_at.asc"),
       get("resumes", "select=*&order=created_at.asc"),
+      get("certifications", "select=*&order=created_at.asc"),
       get("hidden", "select=kind,item_id"),
     ]);
-    return { projects: projects.map(toProject), resumes: resumes.map(toResume), hidden };
+    return {
+      projects: projects.map(toProject),
+      resumes: resumes.map(toResume),
+      certifications: certifications.map(toCertification),
+      hidden,
+    };
   } catch (err) {
     console.warn("Remote content unavailable, showing built-in content.", err);
     return null;

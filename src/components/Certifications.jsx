@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { portfolioData } from "../data/portfolioData";
+import { useContent } from "../lib/contentContext";
 import { Eyebrow } from "./ui";
 
-const { certifications } = portfolioData;
 const { name } = portfolioData.personalInfo;
+// Built-in entries use "#" for "no link".
+const linkOf = (c) => c.file || (c.link && c.link !== "#" ? c.link : null);
 
 // Oval fade: the drawing dissolves into the paper with no straight edges, so it never
 // reads as a framed rectangle.
@@ -14,6 +16,8 @@ const fade = {
 
 export default function Certifications() {
   const [open, setOpen] = useState(0);
+  const { certifications } = useContent();
+  if (!certifications.length) return null;
 
   return (
     <section id="certifications" className="border-b border-line">
@@ -74,6 +78,16 @@ export default function Certifications() {
                         </p>
                         {c.description && (
                           <p className="mt-2 max-w-[56ch] text-[14px] leading-snug text-ink-2">{c.description}</p>
+                        )}
+                        {linkOf(c) && (
+                          <a
+                            href={linkOf(c)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="label mt-3 inline-flex items-center gap-1.5 text-signal underline-offset-4 hover:underline"
+                          >
+                            View certificate <span aria-hidden="true">↗</span>
+                          </a>
                         )}
                       </div>
                     </div>

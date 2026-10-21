@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { portfolioData } from "../data/portfolioData";
-import { BUCKETS, remoteEnabled, toProject, toResume } from "../lib/remote";
+import { BUCKETS, remoteEnabled, toCertification, toProject, toResume } from "../lib/remote";
 import { LIMITS, OWNER_EMAIL, supabase } from "./supabase";
 
 const field = "w-full border border-line bg-paper px-3 py-2 text-[14px] outline-none focus:border-ink";
@@ -51,6 +51,7 @@ export default function Admin() {
         <>
           <Resumes />
           <Projects />
+          <Certifications />
         </>
       )}
     </div>
@@ -702,6 +703,289 @@ function Projects() {
         <div className="md:col-span-2">
           <button type="submit" className="btn btn-signal" disabled={busy}>
             <span>{busy ? "Saving…" : editing ? "Save changes" : "Add project"}</span>
+            <span aria-hidden="true">→</span>
+          </button>
+          <Notice state={state} />
+        </div>
+      </form>
+    </Section>
+  );
+}
+
+/* ---------------- Certifications ---------------- */
+
+const emptyCert = { title: "", issuer: "", date: "", description: "", link: "" };
+const CERT_TYPES = { pdf: "application/pdf", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp" };
+const CERT_BYTES = 10 * 1024 * 1024;
+
+const certToForm = (c) => ({
+  title: c.title ?? "",
+  issuer: c.issuer ?? "",
+  date: c.date ?? "",
+  description: c.description ?? "",
+  link: c.link && c.link !== "#" ? c.link : "",
+});
+
+function Certifications() {
+  const [rows, setRows] = useState([]);
+  const [hidden, setHidden] = useState(new Set());
+  const [form, setForm] = useState(emptyCert);
+  const [file, setFile] = useState(null);
+  const [dropFile, setDropFile] = useState(false);
+  const [editing, setEditing] = useState(null); // { base, current }
+  const [formKey, setFormKey] = useState(0);
+  const [state, setState] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const formRef = useRef(null);
+
+  const load = useCallback(async () => {
+    try {
+      const [{ data, error }, h] = await Promise.all([
+        supabase.from("certifications").select("*").order("created_at", { ascending: true }),
+        loadHidden("certification"),
+      ]);
+      if (error) throw error;
+      setRows(data.map(toCertification));
+      setHidden(h);
+    } catch (err) {
+      setState({ error: true, message: err.message });
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const items = [
+    ...portfolioData.certifications.map((b) => {
+      const edit = rows.find((r) => r.replaces === b.id);
+      return { base: b, current: edit ?? b, edited: Boolean(edit) };
+    }),
+    ...rows.filter((r) => !r.replaces).map((r) => ({ base: null, current: r, edited: false })),
+  ];
+
+  const resetForm = () => {
+    setForm(emptyCert);
+    setFile(null);
+    setDropFile(false);
+    setEditing(null);
+    setFormKey((k) => k + 1);
+  };
+
+  const startEdit = (item) => {
+    resetForm();
+    setEditing(item);
+    setForm(certToForm(item.current));
+    setState({ message: `Editing “${item.current.title}”.` });
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    const fail = (message) => setState({ error: true, message });
+    if (!form.title.trim()) return fail("Give the certificate a title.");
+    if (!isUrl(form.link.trim())) return fail("The credential link must start with http:// or https://");
+    if (file && !CERT_TYPES[extOf(file.name)]) return fail("Certificate files can be PDF, PNG, JPG or WebP.");
+    if (file && file.size > CERT_BYTES) return fail("Keep certificate files under 10 MB.");
+
+    setBusy(true);
+    setState({ message: "Saving certificate…" });
+    let uploaded = null;
+    try {
+      if (file) {
+        uploaded = `${crypto.randomUUID()}.${extOf(file.name)}`;
+        const up = await supabase.storage.from(BUCKETS.certificates).upload(uploaded, file, { contentType: CERT_TYPES[extOf(file.name)] });
+        if (up.error) throw up.error;
+      }
+      const cur = editing?.current;
+      const keepFile = !dropFile && !uploaded;
+      const fields = {
+        title: form.title.trim(),
+        issuer: form.issuer.trim() || null,
+        date: form.date.trim() || null,
+        description: form.description.trim() || null,
+        link: form.link.trim() || null,
+        file_path: uploaded ?? (keepFile ? cur?.filePath ?? null : null),
+        file_name: file ? file.name : keepFile ? cur?.fileName ?? null : null,
+      };
+      let error;
+      if (cur?.remote) ({ error } = await supabase.from("certifications").update(fields).eq("id", cur.id));
+      else ({ error } = await supabase.from("certifications").insert({ ...fields, replaces: editing?.base?.id ?? null }));
+      if (error) throw error;
+      if (cur?.remote && cur.filePath && (uploaded || dropFile)) await supabase.storage.from(BUCKETS.certificates).remove([cur.filePath]);
+
+      setState({ message: `“${fields.title}” ${editing ? "updated" : "added"}. It now shows on the site.` });
+      resetForm();
+      load();
+    } catch (err) {
+      if (uploaded) await supabase.storage.from(BUCKETS.certificates).remove([uploaded]);
+      setState({ error: true, message: err.message });
+    }
+    setBusy(false);
+  };
+
+  const dropRow = async (c) => {
+    const { error } = await supabase.from("certifications").delete().eq("id", c.id);
+    if (error) throw error;
+    if (c.filePath) await supabase.storage.from(BUCKETS.certificates).remove([c.filePath]);
+  };
+
+  const act = async (confirmText, fn, done) => {
+    if (confirmText && !window.confirm(confirmText)) return;
+    try {
+      await fn();
+      setState({ message: done });
+      if (editing) resetForm();
+      load();
+    } catch (err) {
+      setState({ error: true, message: err.message });
+    }
+  };
+
+  return (
+    <Section title="Certifications" index="03">
+      <p className="mt-3 text-[13px] text-ink-2">
+        Every certificate in “Always learning”. Add new ones with a credential link or the certificate itself (PDF or image); visitors get a
+        “View certificate” link. Built-in ones can be edited, removed and restored.
+      </p>
+
+      <ul className="mt-4 border-t border-line">
+        {items.map((item) => {
+          const { base, current: c } = item;
+          const off = base && hidden.has(String(base.id));
+          return (
+            <li key={base?.id ?? c.id} className={`flex flex-wrap items-center justify-between gap-3 border-b border-line py-3 ${off ? "opacity-60" : ""}`}>
+              <div className="min-w-0">
+                <p className="font-semibold">
+                  {c.title}
+                  {off && <span className="label ml-2 text-signal">Removed from site</span>}
+                </p>
+                <p className="label text-mute">
+                  {[c.issuer, c.date].filter(Boolean).join(" · ")} · {base ? (item.edited ? "Built-in, edited" : "Built-in") : "Added here"}
+                  {c.fileName ? ` · File: ${c.fileName}` : ""}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" className="btn" disabled={busy} onClick={() => startEdit(item)}>
+                  <span>Edit</span>
+                </button>
+                {item.edited && (
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={busy}
+                    onClick={() => act(`Undo your edits to “${base.title}”?`, () => dropRow(c), `“${base.title}” is back to the original.`)}
+                  >
+                    <span>Use original</span>
+                  </button>
+                )}
+                {base && off && (
+                  <button
+                    type="button"
+                    className="btn btn-signal"
+                    disabled={busy}
+                    onClick={() =>
+                      act(null, async () => {
+                        const { error } = await unhide("certification", base.id);
+                        if (error) throw error;
+                      }, `“${c.title}” is back on the site.`)
+                    }
+                  >
+                    <span>Restore</span>
+                  </button>
+                )}
+                {base && !off && (
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={busy}
+                    onClick={() =>
+                      act(`Remove “${c.title}” from the site? You can restore it later.`, async () => {
+                        const { error } = await hide("certification", base.id);
+                        if (error) throw error;
+                      }, `Removed “${c.title}” from the site.`)
+                    }
+                  >
+                    <span>Remove</span>
+                  </button>
+                )}
+                {!base && (
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={busy}
+                    onClick={() => act(`Delete “${c.title}”? Its uploaded file is deleted too.`, () => dropRow(c), `Deleted “${c.title}”.`)}
+                  >
+                    <span>Delete</span>
+                  </button>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div ref={formRef} className="mt-8 flex scroll-mt-6 items-baseline justify-between gap-4">
+        <p className="label text-mute">{editing ? `Editing: ${editing.current.title}` : "Add a certificate"}</p>
+        {editing && (
+          <button
+            type="button"
+            className="label underline underline-offset-4"
+            onClick={() => {
+              resetForm();
+              setState(null);
+            }}
+          >
+            Cancel editing
+          </button>
+        )}
+      </div>
+      <form key={formKey} onSubmit={submit} className="mt-3 grid gap-4 md:grid-cols-2">
+        <label className="block md:col-span-2">
+          <span className="label text-mute">Title *</span>
+          <input required value={form.title} onChange={set("title")} placeholder="e.g. Google Data Analytics" className={`${field} mt-1`} />
+        </label>
+        <label className="block">
+          <span className="label text-mute">Issued by</span>
+          <input value={form.issuer} onChange={set("issuer")} placeholder="e.g. Google · Coursera" className={`${field} mt-1`} />
+        </label>
+        <label className="block">
+          <span className="label text-mute">Date</span>
+          <input value={form.date} onChange={set("date")} placeholder="e.g. 2025 or Mar 2025" className={`${field} mt-1`} />
+        </label>
+        <label className="block md:col-span-2">
+          <span className="label text-mute">What you learned</span>
+          <textarea rows={3} value={form.description} onChange={set("description")} className={`${field} mt-1`} />
+        </label>
+        <label className="block">
+          <span className="label text-mute">Credential link</span>
+          <input type="url" value={form.link} onChange={set("link")} placeholder="https://…" className={`${field} mt-1`} />
+        </label>
+        <div className="block">
+          <label className="block">
+            <span className="label text-mute">Certificate file (PDF, PNG, JPG or WebP, under 10 MB)</span>
+            <input
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg,.webp"
+              onChange={(e) => {
+                setFile(e.target.files?.[0] ?? null);
+                setDropFile(false);
+              }}
+              className="mt-1 block w-full text-[13px]"
+            />
+          </label>
+          {editing?.current.fileName && !file && (
+            <label className="mt-2 flex items-center gap-2 text-[12px] text-ink-2">
+              <input type="checkbox" checked={dropFile} onChange={(e) => setDropFile(e.target.checked)} />
+              Remove the current file ({editing.current.fileName})
+            </label>
+          )}
+        </div>
+        <div className="md:col-span-2">
+          <button type="submit" className="btn btn-signal" disabled={busy}>
+            <span>{busy ? "Saving…" : editing ? "Save changes" : "Add certificate"}</span>
             <span aria-hidden="true">→</span>
           </button>
           <Notice state={state} />
