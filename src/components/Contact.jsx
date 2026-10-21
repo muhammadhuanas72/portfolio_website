@@ -1,9 +1,9 @@
-import { useRef } from "react";
 import { portfolioData } from "../data/portfolioData";
-import { gsap, useGsap, scrollToId, MOTION_OK } from "../lib/motion";
+import { scrollToId } from "../lib/motion";
 import IsoGlyph from "./IsoGlyph";
 import { useContent } from "../lib/contentContext";
 import { Btn, ResumeMenu } from "./ui";
+import Wordmark from "./Wordmark";
 
 const { name, introduction, socials } = portfolioData.personalInfo;
 
@@ -26,25 +26,10 @@ function Col({ title, children, className = "" }) {
 const ext = { target: "_blank", rel: "noopener noreferrer" };
 
 export default function Contact() {
-  const root = useRef(null);
   const { projects, resumes } = useContent();
 
-  useGsap(root, (add) => {
-    add(MOTION_OK, () => {
-      gsap.fromTo(
-        "[data-wordmark]",
-        { clipPath: "inset(100% 0 0 0)" },
-        {
-          clipPath: "inset(0% 0 0 0)",
-          ease: "none",
-          scrollTrigger: { trigger: "[data-wordmark]", start: "top 95%", end: "bottom 85%", scrub: true },
-        }
-      );
-    });
-  });
-
   return (
-    <footer id="contact" ref={root}>
+    <footer id="contact">
       {/* Call to action */}
       <section className="relative grid border-b border-line md:grid-cols-[1fr_2fr_1fr]" aria-labelledby="cta-title">
         <div className="label hidden border-r border-line p-3 text-mute md:block">[0,240]</div>
@@ -138,36 +123,7 @@ export default function Contact() {
         </div>
       </div>
 
-      {/* Construction-drawn wordmark */}
-      <div className="relative overflow-hidden border-b border-line px-4 pb-4 pt-8 md:px-6">
-        <svg data-wordmark viewBox="0 0 1000 190" className="w-full" aria-hidden="true">
-          <g stroke="var(--color-line)" strokeDasharray="4 6">
-            <line x1="0" y1="22" x2="1000" y2="22" />
-            <line x1="0" y1="168" x2="1000" y2="168" />
-            <line x1="0" y1="95" x2="1000" y2="95" />
-          </g>
-          <text
-            x="500"
-            y="168"
-            textAnchor="middle"
-            textLength="990"
-            lengthAdjust="spacingAndGlyphs"
-            fontFamily="Inter Tight, sans-serif"
-            fontWeight="700"
-            fontSize="200"
-            fill="none"
-            stroke="var(--color-ink)"
-            strokeWidth="1.2"
-          >
-            ANAS M.
-          </text>
-          <g fill="var(--color-ink)">
-            {[8, 500, 992].map((x) => (
-              <circle key={x} cx={x} cy="95" r="2.5" />
-            ))}
-          </g>
-        </svg>
-      </div>
+      <Wordmark />
 
       <div className="label flex flex-col justify-between gap-1 px-4 py-4 text-mute md:flex-row md:px-6">
         <span>
