@@ -26,7 +26,9 @@ const EASE = 0.22; // how quickly the head follows the cursor, per animation fra
 const frameAt = (x) =>
   x <= 0.5 ? x * 2 * TURN.centre : TURN.centre + (x - 0.5) * 2 * (TURN.frames - 1 - TURN.centre);
 
-// The video never plays; the cursor's position inside the portrait picks the frame shown.
+// The video never plays; the cursor's position picks the frame shown. Over the portrait the
+// head follows the cursor; anywhere else in the section (the certifications list sits to the
+// right) it looks toward the cursor, so hovering the list turns it to face the list.
 // Touch screens and reduced-motion visitors keep the still, straight-ahead poster.
 function Portrait() {
   const field = useRef(null);
@@ -34,6 +36,7 @@ function Portrait() {
 
   useEffect(() => {
     const el = field.current;
+    const area = el.closest("section") ?? el; // listen across the whole section
     const v = video.current;
     if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches || prefersReducedMotion()) return;
 
@@ -93,9 +96,9 @@ function Portrait() {
 
     v.addEventListener("seeked", onSeeked);
     v.addEventListener("loadeddata", onReady);
-    el.addEventListener("pointerenter", enter);
-    el.addEventListener("pointermove", move);
-    el.addEventListener("pointerleave", leave);
+    area.addEventListener("pointerenter", enter);
+    area.addEventListener("pointermove", move);
+    area.addEventListener("pointerleave", leave);
     window.addEventListener("resize", measure);
     // Only now fetch the clip; until it can draw a frame the poster shows the same pose.
     v.preload = "auto";
@@ -105,9 +108,9 @@ function Portrait() {
       cancelAnimationFrame(raf);
       v.removeEventListener("seeked", onSeeked);
       v.removeEventListener("loadeddata", onReady);
-      el.removeEventListener("pointerenter", enter);
-      el.removeEventListener("pointermove", move);
-      el.removeEventListener("pointerleave", leave);
+      area.removeEventListener("pointerenter", enter);
+      area.removeEventListener("pointermove", move);
+      area.removeEventListener("pointerleave", leave);
       window.removeEventListener("resize", measure);
     };
   }, []);
