@@ -245,6 +245,50 @@ export const portfolioData = {
       details: "A computer vision application integrating a Flask web server and OpenCV object detection engine. Fully containerized using Docker and configured for deployment via Gunicorn and Procfiles."
     },
     {
+      id: "proj-7",
+      category: "web",
+      year: "2026",
+      title: "AESTHETICA",
+      subtitle: "Interior Architecture Studio Website",
+      image: "/work/aesthetica.webp",
+      demoUrl: "https://aesthetica-tau-dusky.vercel.app",
+      githubUrl: "https://github.com/muhammadhuanas72/aesthetica",
+      tech: ["React", "Vite", "Tailwind CSS", "GSAP", "ScrollTrigger"],
+      features: [
+        "Hero wordmark with the interior photography revealed through the letterforms.",
+        "Scroll-driven room story that furnishes an empty space step by step, with a numbered list of every room component.",
+        "Featured project, materials and four-step approach sections with a running materials ticker.",
+        "Project enquiry form and an editorial serif and sans layout in warm neutral tones."
+      ],
+      challenges: [
+        "Keeping a long scroll sequence smooth: Pinned and scrubbed scenes with GSAP ScrollTrigger so each stage plays forwards and reverses cleanly.",
+        "Large photography without slow loads: Sized and staged images per section so the page stays responsive while scrolling."
+      ],
+      details: "A website for a contemporary interior architecture and design studio. Built with React, Vite and Tailwind CSS, with GSAP ScrollTrigger animations that walk the visitor through a room from bare shell to finished space."
+    },
+    {
+      id: "proj-8",
+      category: "web",
+      year: "2026",
+      title: "Essay Pressings",
+      subtitle: "Industrial Manufacturer Website",
+      image: "/work/essay_pressings.webp",
+      demoUrl: "https://essay-pressing.onrender.com",
+      githubUrl: "https://github.com/muhammadhuanas72/Essay_pressing",
+      tech: ["React", "TypeScript", "Vite", "Supabase", "Render"],
+      features: [
+        "Searchable product catalogue with category filters and detailed spec views for washers, brackets and press parts.",
+        "Request-a-quote form that saves enquiries to Supabase.",
+        "Admin dashboard for reviewing incoming quote requests.",
+        "Light and dark themes, WhatsApp and call shortcuts, and a cookie consent notice."
+      ],
+      challenges: [
+        "Turning a large product range into something easy to browse: Built client-side search across name, description and material with category filtering.",
+        "Capturing leads reliably: Connected the quote form to a Supabase table so every enquiry is stored for the business to follow up."
+      ],
+      details: "A business website for a Chennai-based manufacturer of precision metal components, established in 2005. Built with React and TypeScript, it covers the company profile, products, infrastructure and industries served, with quote requests stored in Supabase."
+    },
+    {
       id: "proj-4",
       category: "data",
       year: "2026",
