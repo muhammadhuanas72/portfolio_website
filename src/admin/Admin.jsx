@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { portfolioData } from "../data/portfolioData";
-import { BUCKETS, remoteEnabled, toProject, toResume } from "../lib/remote";
+import { BUCKETS, publicUrl, remoteEnabled, toProject, toResume } from "../lib/remote";
 import { LIMITS, OWNER_EMAIL, supabase } from "./supabase";
 
 const field = "w-full border border-line bg-paper px-3 py-2 text-[14px] outline-none focus:border-ink";
@@ -249,10 +249,27 @@ const empty = {
 
 const isUrl = (v) => !v || /^https?:\/\/\S+$/i.test(v);
 
+const lines = (v) => v.split("\n").map((x) => x.trim()).filter(Boolean);
+
+// Draft from the AI -> the form's string fields.
+const toForm = (d) => ({
+  title: d.title ?? "",
+  subtitle: d.subtitle ?? "",
+  category: d.category === "data" ? "data" : "web",
+  year: d.year ?? String(new Date().getFullYear()),
+  details: d.details ?? "",
+  features: (d.features ?? []).join("\n"),
+  tech: (d.tech ?? []).join(", "),
+  demo_url: d.demo_url ?? "",
+  github_url: d.github_url ?? "",
+});
+
 function Projects() {
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState(empty);
   const [image, setImage] = useState(null);
+  // Cover the AI took and already stored; used unless a file is chosen instead.
+  const [aiImage, setAiImage] = useState(null);
   const [state, setState] = useState(null);
   const [busy, setBusy] = useState(false);
 
@@ -268,10 +285,10 @@ function Projects() {
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!form.title.trim()) return setState({ error: true, message: "Give the project a title." });
-    if (!isUrl(form.demo_url) || !isUrl(form.github_url)) {
+  // Validate, upload the chosen file (or use the AI cover), insert the row.
+  const save = async (values, coverPath) => {
+    if (!values.title.trim()) return setState({ error: true, message: "Give the project a title." });
+    if (!isUrl(values.demo_url) || !isUrl(values.github_url)) {
       return setState({ error: true, message: "Links must start with http:// or https://" });
     }
     if (image && !LIMITS.imageTypes[image.type]) return setState({ error: true, message: "Images must be PNG, JPG or WebP." });
@@ -279,39 +296,69 @@ function Projects() {
 
     setBusy(true);
     setState({ message: "Saving project…" });
-    let image_path = null;
+    let image_path = coverPath;
+    let uploaded = null;
     if (image) {
-      image_path = `${crypto.randomUUID()}.${LIMITS.imageTypes[image.type]}`;
-      const up = await supabase.storage.from(BUCKETS.images).upload(image_path, image, { contentType: image.type });
+      uploaded = `${crypto.randomUUID()}.${LIMITS.imageTypes[image.type]}`;
+      const up = await supabase.storage.from(BUCKETS.images).upload(uploaded, image, { contentType: image.type });
       if (up.error) {
         setBusy(false);
         return setState({ error: true, message: up.error.message });
       }
+      image_path = uploaded;
     }
 
-    const lines = (v) => v.split("\n").map((x) => x.trim()).filter(Boolean);
     const { error } = await supabase.from("projects").insert({
-      title: form.title.trim(),
-      subtitle: form.subtitle.trim() || null,
-      category: form.category,
-      year: form.year.trim() || null,
-      details: form.details.trim() || null,
-      features: lines(form.features),
-      tech: form.tech.split(",").map((x) => x.trim()).filter(Boolean),
-      demo_url: form.demo_url.trim() || null,
-      github_url: form.github_url.trim() || null,
+      title: values.title.trim(),
+      subtitle: values.subtitle.trim() || null,
+      category: values.category,
+      year: values.year.trim() || null,
+      details: values.details.trim() || null,
+      features: lines(values.features),
+      tech: values.tech.split(",").map((x) => x.trim()).filter(Boolean),
+      demo_url: values.demo_url.trim() || null,
+      github_url: values.github_url.trim() || null,
       image_path,
     });
     setBusy(false);
     if (error) {
-      if (image_path) await supabase.storage.from(BUCKETS.images).remove([image_path]);
+      if (uploaded) await supabase.storage.from(BUCKETS.images).remove([uploaded]);
       return setState({ error: true, message: error.message });
     }
+    // A chosen file replaced the AI cover, so the AI one is no longer needed.
+    if (uploaded && coverPath) await supabase.storage.from(BUCKETS.images).remove([coverPath]);
     setForm(empty);
     setImage(null);
-    e.target.reset();
-    setState({ message: "Project added. It now appears on the site." });
+    setAiImage(null);
+    setState({ message: `“${values.title.trim()}” added. It now appears on the site.` });
     load();
+    return true;
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (await save(form, aiImage)) e.target.reset();
+  };
+
+  // Ask the server to read the site and repo and draft the entry.
+  const analyse = async ({ url, github, publish }) => {
+    setBusy(true);
+    setState({ message: "Reading the site and its code… this takes about half a minute." });
+    if (aiImage) await supabase.storage.from(BUCKETS.images).remove([aiImage]);
+    setAiImage(null);
+    const { data, error } = await supabase.functions.invoke("analyse-project", { body: { url, github } });
+    setBusy(false);
+    if (error || data?.error) {
+      let message = data?.error;
+      if (!message && error?.context?.json) message = (await error.context.json().catch(() => null))?.error;
+      return setState({ error: true, message: message || error?.message || "The analysis failed." });
+    }
+    const values = toForm(data.draft);
+    setForm(values);
+    setAiImage(data.image_path);
+    const notes = data.notes?.length ? ` ${data.notes.join(" ")}` : "";
+    if (publish) return save(values, data.image_path);
+    setState({ message: `Draft ready. Check it below, then press Add project.${notes}` });
   };
 
   const remove = async (p) => {
@@ -327,8 +374,10 @@ function Projects() {
     <Section title="Projects" index="02">
       <p className="mt-3 text-[13px] text-ink-2">
         Projects added here appear after the built-in ones ({portfolioData.projects.length}). Built-in projects are edited in{" "}
-        <code>src/data/portfolioData.js</code>.
+        <code>src/data/projects.json</code>.
       </p>
+
+      <Analyse busy={busy} onRun={analyse} />
 
       {rows.length > 0 && (
         <ul className="mt-4 border-t border-line">
@@ -391,6 +440,16 @@ function Projects() {
           <span className="label text-mute">GitHub URL</span>
           <input type="url" value={form.github_url} onChange={set("github_url")} placeholder="https://github.com/…" className={`${field} mt-1`} />
         </label>
+        {aiImage && (
+          <figure className="md:col-span-2">
+            <img
+              src={publicUrl(BUCKETS.images, aiImage)}
+              alt="Cover taken from the live site"
+              className="aspect-[1600/724] w-full border border-line object-cover"
+            />
+            <figcaption className="label mt-1 text-mute">Cover from the live site · choose a file below to replace it</figcaption>
+          </figure>
+        )}
         <label className="block md:col-span-2">
           <span className="label text-mute">Screenshot (PNG, JPG or WebP, under 4 MB)</span>
           <input
@@ -409,5 +468,53 @@ function Projects() {
         </div>
       </form>
     </Section>
+  );
+}
+
+// Paste links; the AI drafts the entry (Analyse) or drafts and saves it in one go.
+function Analyse({ busy, onRun }) {
+  const [url, setUrl] = useState("");
+  const [github, setGithub] = useState("");
+
+  const run = (publish) => (e) => {
+    e.preventDefault();
+    if (!url.trim() || !isUrl(url.trim())) return;
+    onRun({ url: url.trim(), github: github.trim() || null, publish });
+  };
+
+  return (
+    <form onSubmit={run(false)} className="mt-6 border border-ink p-4 md:p-5">
+      <p className="label text-signal">Add with AI</p>
+      <p className="mt-2 text-[13px] leading-snug text-ink-2">
+        Paste the live link, and the GitHub repo if there is one. The AI opens the site, reads its code, works out what kind of project it is, writes the
+        title, description, features and tech, and takes the cover screenshot.
+      </p>
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <label className="block">
+          <span className="label text-mute">Live link *</span>
+          <input
+            type="url"
+            required
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://my-site.vercel.app"
+            className={`${field} mt-1`}
+          />
+        </label>
+        <label className="block">
+          <span className="label text-mute">GitHub repo</span>
+          <input type="url" value={github} onChange={(e) => setGithub(e.target.value)} placeholder="https://github.com/…" className={`${field} mt-1`} />
+        </label>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button type="submit" className="btn btn-signal" disabled={busy}>
+          <span>{busy ? "Working…" : "Analyse"}</span>
+          <span aria-hidden="true">→</span>
+        </button>
+        <button type="button" className="btn" disabled={busy} onClick={run(true)}>
+          <span>Analyse and publish</span>
+        </button>
+      </div>
+    </form>
   );
 }
