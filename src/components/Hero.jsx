@@ -1,19 +1,29 @@
 import { useEffect, useRef, useState } from "react";
 import { portfolioData } from "../data/portfolioData";
 import { gsap, useGsap, scrollToId, MOTION_OK, DESKTOP } from "../lib/motion";
-import { Corners, Ruler, Words } from "./ui";
+import { Btn, Corners, Ruler, Words } from "./ui";
 import { BOOT_DELAY } from "../lib/boot";
 
-const { name, titles, socials, avatar } = portfolioData.personalInfo;
+const { name, titles, socials, avatar, resumeUrl } = portfolioData.personalInfo;
+const { summary } = portfolioData.about;
 const education = portfolioData.about.timeline[0];
 const internships = portfolioData.experience;
+const latest = internships[internships.length - 1];
+const skill = (id) => portfolioData.skills.categories.find((c) => c.id === id).items;
+
+const facts = [
+  { k: "Based in", v: socials.location },
+  { k: "Studying", v: `${education.title} · ${education.year}` },
+  { k: "Experience", v: `${internships.length} internships · ${latest.company}` },
+  { k: "Works with", v: [...skill("frontend").slice(0, 3), ...skill("programming").slice(0, 2)].join(" · ") },
+];
 
 // Callouts pinned to the photo (positions are % of the photo box). `open` places the
 // callout so it never covers the face.
 const markers = [
-  { x: 55, y: 36, open: "left-3 bottom-3", code: "01", title: titles[0], note: titles.slice(1).join(" · ") },
-  { x: 41, y: 52, open: "right-3 top-3", code: "02", title: education.title, note: `${education.year} · Crescent Institute` },
-  { x: 61, y: 62, open: "right-3 top-3", code: "03", title: `${internships.length}× internships`, note: internships[0].company },
+  { x: 55, y: 41, open: "left-3 bottom-3", code: "01", title: titles[0], note: titles.slice(1).join(" · ") },
+  { x: 52, y: 52, open: "right-3 top-3", code: "02", title: education.title, note: `${education.year} · Crescent Institute` },
+  { x: 58, y: 62, open: "left-3 top-3", code: "03", title: `${internships.length}× internships`, note: internships[0].company },
 ];
 
 export default function Hero() {
@@ -41,7 +51,7 @@ export default function Hero() {
       tl.from("[data-print]", { clipPath: "inset(100% 0 0 0)", duration: 1.8, ease: "power3.inOut" })
         .from("[data-ground]", { scaleX: 0, duration: 1.2 }, 0.2)
         .from("[data-marker]", { scale: 0, duration: 0.6, stagger: 0.12 }, 1.2)
-        .from("h1 [data-word]", { yPercent: 110, duration: 1.1, stagger: 0.04 }, 0.5)
+        .from("[data-rise] [data-word]", { yPercent: 110, duration: 1.1, stagger: 0.04 }, 0.5)
         .from("[data-meta]", { opacity: 0, y: 12, duration: 0.8, stagger: 0.08 }, 0.9);
     });
 
@@ -57,97 +67,119 @@ export default function Hero() {
 
   return (
     <section id="hero" ref={root} className="pt-[var(--nav-h)]">
-      {/* Drawing sheet */}
+      {/* Drawing sheet: who I am on the left, the photo on the right */}
       <div
         ref={stage}
-        className="relative h-[calc(100svh-var(--nav-h)-112px)] min-h-[460px] overflow-hidden border-b border-line select-none md:min-h-[560px]"
+        className="relative grid overflow-hidden border-b border-line md:h-[calc(100svh-var(--nav-h)-112px)] md:min-h-[600px] md:grid-cols-12"
       >
         <Corners />
         <Ruler className="absolute inset-x-0 top-2" />
         <Ruler className="absolute inset-x-0 bottom-2 rotate-180" />
         <div aria-hidden="true" className="ruler-v absolute inset-y-6 left-2" />
         <div aria-hidden="true" className="ruler-v absolute inset-y-6 right-2 rotate-180" />
+        <div aria-hidden="true" className="dash-x absolute inset-x-6 top-1/2 hidden h-px opacity-70 md:block" />
 
-        {/* Construction lines */}
-        <div aria-hidden="true" className="dash-x absolute inset-x-6 top-1/2 h-px opacity-70" />
-        <div aria-hidden="true" className="dash-y absolute inset-y-6 left-1/2 w-px opacity-70" />
-        <div
-          aria-hidden="true"
-          data-ground
-          className="absolute bottom-[9%] left-[12%] right-[12%] h-[1.5px] origin-center bg-ink"
-        />
+        {/* Who am I */}
+        <div className="relative z-10 order-2 flex flex-col justify-center px-5 pb-12 pt-8 md:order-1 md:col-span-6 md:py-12 md:pl-12 md:pr-10 lg:pl-16">
+          <p data-meta className="label flex items-center gap-2">
+            <span aria-hidden="true" className="h-2 w-2 bg-signal" />
+            [00] Who am I
+          </p>
+          <h1 data-rise className="display mt-4 text-[clamp(40px,5.4vw,84px)] leading-[0.92]">
+            <Words text={name} mask />
+          </h1>
+          <p data-meta className="label mt-4 text-mute">{titles.join(" / ")}</p>
+          <p data-meta className="mt-6 max-w-[52ch] text-[15px] leading-snug text-ink-2 md:text-[16px]">{summary}</p>
 
-        <div data-figure-wrap className="absolute inset-x-0 bottom-[9%] top-[7%] flex justify-center">
-          <figure className="relative h-full aspect-[720/1280]">
-            {/* Scale bar beside the photo */}
-            <div aria-hidden="true" className="absolute -left-14 bottom-0 top-0 hidden w-6 md:block">
-              <div className="absolute inset-y-0 left-1/2 w-px bg-mute" />
-              <div className="absolute left-0 right-0 top-0 h-px bg-mute" />
-              <div className="absolute bottom-0 left-0 right-0 h-px bg-mute" />
-              <span className="label absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-90 whitespace-nowrap bg-paper px-1 text-mute">
-                [ 1 : 1 ]
-              </span>
-            </div>
-            <figcaption className="label absolute -top-5 left-0 text-mute">Fig. 01 — {name}</figcaption>
-
-            <div data-print className="absolute inset-0 overflow-hidden border border-ink bg-paper-2 shadow-[10px_10px_0_0_var(--color-line)]">
-              <img
-                src={avatar}
-                alt={`Photo of ${name}`}
-                width="720"
-                height="1280"
-                fetchPriority="high"
-                className="h-full w-full object-cover"
-                draggable="false"
-              />
-            </div>
-
-            {markers.map((m, i) => (
-              <div key={m.code} className="absolute" style={{ left: `${m.x}%`, top: `${m.y}%` }}>
-                <button
-                  type="button"
-                  data-marker
-                  aria-expanded={active === i}
-                  aria-label={`${m.title} — ${m.note}`}
-                  onPointerEnter={(e) => e.pointerType === "mouse" && setActive(i)}
-                  onPointerLeave={(e) => e.pointerType === "mouse" && setActive(null)}
-                  onFocus={() => setActive(i)}
-                  onBlur={() => setActive(null)}
-                  onClick={() => setActive(i)}
-                  className="relative z-10 -ml-[7px] -mt-[7px] block h-[14px] w-[14px] bg-signal before:absolute before:-inset-3 before:content-['']"
-                />
-                <div
-                  role="status"
-                  className={`absolute z-20 w-[min(200px,42vw)] bg-signal p-2.5 text-white transition-[opacity,transform] duration-300 ease-out-expo ${m.open} ${active === i ? "opacity-100" : "pointer-events-none translate-y-1 opacity-0"}`}
-                >
-                  <p className="label opacity-80">[{m.code}]</p>
-                  <p className="mt-1 text-[15px] font-semibold uppercase leading-[1.05]">{m.title}</p>
-                  <p className="label mt-1.5 opacity-90">{m.note}</p>
-                </div>
+          <dl data-meta className="mt-7 max-w-[560px] border-t border-line">
+            {facts.map((f) => (
+              <div key={f.k} className="grid grid-cols-[110px_1fr] gap-4 border-b border-line py-2.5">
+                <dt className="label pt-0.5 text-mute">{f.k}</dt>
+                <dd className="text-[14px] leading-snug">{f.v}</dd>
               </div>
             ))}
-          </figure>
+          </dl>
+
+          <div data-meta className="mt-8 flex flex-wrap gap-2">
+            <Btn signal onClick={() => scrollToId("work")}>
+              View my work
+            </Btn>
+            <Btn href={resumeUrl} download="Muhammadhu_Anas_Resume.pdf">
+              Resume
+            </Btn>
+          </div>
         </div>
 
-        <p className="label absolute bottom-5 left-6 text-mute md:left-8">[ Hover or tap a marker ]</p>
-        <p ref={coords} aria-hidden="true" className="label absolute bottom-5 right-6 hidden text-mute md:right-8 md:block">
-          X:0000PX  Y:0000PX
-        </p>
+        {/* Photo */}
+        <div className="relative order-1 h-[min(78svh,640px)] select-none border-b border-line md:order-2 md:col-span-6 md:h-auto md:border-b-0 md:border-l">
+          <div aria-hidden="true" className="dash-y absolute inset-y-6 left-1/2 w-px opacity-70" />
+          <div
+            aria-hidden="true"
+            data-ground
+            className="absolute bottom-[8%] left-[8%] right-[8%] h-[1.5px] origin-center bg-ink"
+          />
+
+          <div data-figure-wrap className="absolute inset-x-0 bottom-[8%] top-[9%] flex justify-center md:top-[8%]">
+            <figure className="relative h-full max-w-[86%] aspect-[1024/1280]">
+              <figcaption className="label absolute -top-5 left-0 text-mute">Fig. 01 — {name}</figcaption>
+
+              <div data-print className="absolute inset-0 overflow-hidden border border-ink bg-paper-2 shadow-[10px_10px_0_0_var(--color-line)]">
+                <img
+                  src={avatar}
+                  alt={`Photo of ${name}`}
+                  width="1024"
+                  height="1280"
+                  fetchPriority="high"
+                  className="h-full w-full object-cover"
+                  draggable="false"
+                />
+              </div>
+
+              {markers.map((m, i) => (
+                <div key={m.code} className="absolute" style={{ left: `${m.x}%`, top: `${m.y}%` }}>
+                  <button
+                    type="button"
+                    data-marker
+                    aria-expanded={active === i}
+                    aria-label={`${m.title} — ${m.note}`}
+                    onPointerEnter={(e) => e.pointerType === "mouse" && setActive(i)}
+                    onPointerLeave={(e) => e.pointerType === "mouse" && setActive(null)}
+                    onFocus={() => setActive(i)}
+                    onBlur={() => setActive(null)}
+                    onClick={() => setActive(i)}
+                    className="relative z-10 -ml-[7px] -mt-[7px] block h-[14px] w-[14px] bg-signal before:absolute before:-inset-3 before:content-['']"
+                  />
+                  <div
+                    role="status"
+                    className={`absolute z-20 w-[min(200px,42vw)] bg-signal p-2.5 text-white transition-[opacity,transform] duration-300 ease-out-expo ${m.open} ${active === i ? "opacity-100" : "pointer-events-none translate-y-1 opacity-0"}`}
+                  >
+                    <p className="label opacity-80">[{m.code}]</p>
+                    <p className="mt-1 text-[15px] font-semibold uppercase leading-[1.05]">{m.title}</p>
+                    <p className="label mt-1.5 opacity-90">{m.note}</p>
+                  </div>
+                </div>
+              ))}
+            </figure>
+          </div>
+
+          <p className="label absolute bottom-3 left-6 text-mute md:bottom-5">[ Hover or tap a marker ]</p>
+          <p ref={coords} aria-hidden="true" className="label absolute bottom-5 right-6 hidden text-mute md:block">
+            X:0000PX  Y:0000PX
+          </p>
+        </div>
       </div>
 
       {/* Title block */}
       <div className="grid border-b border-line md:grid-cols-12">
-        <h1 className="display px-4 pb-6 pt-5 text-[clamp(30px,4.1vw,60px)] md:col-span-7 md:px-6">
-          <span className="sr-only">{name}. </span>
+        <p data-rise className="display px-4 pb-6 pt-5 text-[clamp(30px,4.1vw,60px)] md:col-span-7 md:px-6">
           <Words text={portfolioData.personalInfo.introduction.split(" while ")[0]} mask />
-        </h1>
+        </p>
         <div data-meta className="border-t border-line px-4 py-5 md:col-span-3 md:border-l md:border-t-0">
-          <p className="text-[17px] font-semibold uppercase leading-tight">{name}</p>
-          <ul className="label mt-2 space-y-0.5 text-mute">
-            {titles.map((t) => (
-              <li key={t}>{t}</li>
-            ))}
-          </ul>
+          <p className="label text-mute">Latest role</p>
+          <p className="mt-2 text-[17px] font-semibold uppercase leading-tight">{latest.role}</p>
+          <p className="label mt-1 text-mute">
+            {latest.company} · {latest.period}
+          </p>
         </div>
         <button
           type="button"
