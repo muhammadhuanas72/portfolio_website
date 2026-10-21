@@ -180,7 +180,10 @@ export default function Process() {
               key={c.x}
               type="button"
               data-pin
-              onClick={() => scrollToId(`project-${i + 1}`)}
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent("work:open", { detail: i }));
+                scrollToId("work-gallery");
+              }}
               className="group absolute flex -translate-y-1/2 items-center gap-2"
               style={{
                 left: `${((c.x + 14 - VB.x) / VB.w) * 100}%`,
