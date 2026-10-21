@@ -327,7 +327,7 @@ function Projects() {
     <Section title="Projects" index="02">
       <p className="mt-3 text-[13px] text-ink-2">
         Projects added here appear after the built-in ones ({portfolioData.projects.length}). Built-in projects are edited in{" "}
-        <code>src/data/portfolioData.js</code>.
+        <code>src/data/projects.json</code>.
       </p>
 
       {rows.length > 0 && (
