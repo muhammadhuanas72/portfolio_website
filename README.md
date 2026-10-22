@@ -52,7 +52,7 @@ page just explains that editing isn't connected.
 4. **Authentication → Users → Add user**: add `muhammadhuanas72@gmail.com`
    (sign-in links are only sent to existing users).
 5. **Authentication → URL Configuration**: set the Site URL to the live site, and add
-   `https://portfolio-website-cczd.onrender.com/admin.html` and
+   `https://portfolio-website-25vt.onrender.com/admin.html` and
    `http://localhost:5173/admin.html` to Redirect URLs.
 6. **Project Settings → API**: copy the Project URL and anon key into `.env.local`
    (see `.env.example`) and into Render → Environment as `VITE_SUPABASE_URL` and
